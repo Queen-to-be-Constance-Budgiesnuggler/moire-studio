@@ -168,6 +168,11 @@ All eight build steps from docs/ARCHITECTURE.md §9 are in. Since then (review p
 
 Open items: [docs/PENDING.md](docs/PENDING.md).
 
+## Version control
+Local Git repository, branch `main`, no remote. Build output, `local.properties`, IDE folders and
+`.recovery/` are ignored. Useful commands: `git log --oneline` (history), `git diff` (uncommitted changes),
+`git restore <file>` (drop changes to a file). Changelog and test checklist: `docs/studio-log.html`.
+
 ## Requirements (Windows)
 - Android Studio 2026.1 (installed at `C:\Program Files\Android\Android Studio1`; the `Android Studio` folder next to it is a broken leftover)
 - `JAVA_HOME` = `C:\Program Files\Android\Android Studio1\jbr` (JDK 25; Gradle 9 will not start on the Java 11 on PATH)

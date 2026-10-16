@@ -268,6 +268,10 @@ const ROOMS = [
 
 // Changelog, newest first. Times are Danish local time.
 const LOG = [
+  { d: "2026-10-16", t: "22:10", title: "Local version control", items: [
+    "Git repository on branch main (local only, no remote). First commit 884cfdc holds everything up to here.",
+    ".gitignore skips build output, local.properties, IDE folders and recovery files; .gitattributes keeps gradlew's line endings.",
+  ]},
   { d: "2026-10-16", t: "22:00", title: "routing-nodes step 7: two-phone nodes", tests: 138, items: [
     "Send to Other Phone: streams its input to the phone linked in Loop while Live (Max fps, Size, JPEG or PNG), or sends once.",
     "From Other Phone: the latest picture received, or the latest Loop capture, with a Count that ticks up.",
