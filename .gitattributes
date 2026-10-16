@@ -1,0 +1,7 @@
+# Normalise text files; keep scripts runnable on their own platforms.
+* text=auto
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
+*.webp binary

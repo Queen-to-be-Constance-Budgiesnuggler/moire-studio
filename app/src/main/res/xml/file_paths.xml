@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Project files other apps may read when an asset is sent to them (Bridge). -->
+<paths>
+    <files-path name="projects" path="projects/" />
+</paths>

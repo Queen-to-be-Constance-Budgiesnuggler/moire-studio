@@ -1,0 +1,515 @@
+<title>Moiré Studio Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; a moiré band heads the page, tabs switch between the test checklist and the changelog. */
+:root {
+  --bg: #eef0f5; --surface: #ffffff; --ink: #16181e; --muted: #5a6072; --line: #d6dae4;
+  --accent: #5a48d8; --accent-soft: #e7e3ff; --ok: #1d7f47; --ok-soft: #dcf3e6; --bad: #bf3426; --bad-soft: #fde4e0;
+  --display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111217; --surface: #1a1c23; --ink: #e8e9ef; --muted: #9ba1b2; --line: #2c2f3b;
+  --accent: #b3a6ff; --accent-soft: #2b2650; --ok: #55c98a; --ok-soft: #173326; --bad: #ff8070; --bad-soft: #3d1d19; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111217; --surface: #1a1c23; --ink: #e8e9ef; --muted: #9ba1b2; --line: #2c2f3b;
+  --accent: #b3a6ff; --accent-soft: #2b2650; --ok: #55c98a; --ok-soft: #173326; --bad: #ff8070; --bad-soft: #3d1d19; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); padding-inline: 16px; padding-block: 0 48px }
+.wrap { max-width: 760px; margin: 0 auto }
+.band { height: 64px; margin-inline: -16px; position: relative; overflow: hidden;
+  background:
+    repeating-linear-gradient(90deg, var(--ink) 0 1.4px, transparent 1.4px 6px),
+    var(--bg); }
+.band::after { content: ""; position: absolute; inset: -40px; opacity: .9;
+  background: repeating-linear-gradient(93.2deg, var(--ink) 0 1.4px, transparent 1.4px 6px); }
+header { padding-block: 20px 8px; display: grid; gap: 6px }
+h1 { font: 700 2rem/1.1 var(--display); margin: 0; letter-spacing: -.01em; text-wrap: balance }
+.sub { color: var(--muted); margin: 0; max-width: 62ch }
+.meta { font: 13px/1.4 var(--mono); color: var(--muted) }
+nav.tabs { display: flex; gap: 6px; margin-block: 14px 4px; border-bottom: 1px solid var(--line) }
+nav.tabs a { font: 600 15px var(--display); color: var(--muted); text-decoration: none; padding: 8px 12px; border-bottom: 2px solid transparent; margin-bottom: -1px }
+nav.tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent) }
+a:focus-visible, button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.progress { display: grid; gap: 8px; padding-block: 14px }
+.bar { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; display: flex }
+.bar i { display: block; height: 100% }
+.bar .ok { background: var(--ok) } .bar .bad { background: var(--bad) }
+.counts { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 14px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.counts b { color: var(--ink) }
+.filters { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 5px 12px; cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink) }
+.sync { font-size: 13px; color: var(--muted) }
+
+details.room { border-top: 1px solid var(--line); padding-block: 4px }
+details.room > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px; padding-block: 12px }
+details.room > summary::-webkit-details-marker { display: none }
+summary h2 { font: 700 1.2rem var(--display); margin: 0; flex: 1; min-width: 0 }
+summary .n { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap }
+summary::before { content: "▸"; color: var(--muted); font-size: 13px; transition: transform .15s }
+details[open] > summary::before { transform: rotate(90deg) }
+.intro { color: var(--muted); font-size: 14px; margin: -4px 0 8px }
+.group { font: 600 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px }
+
+.item { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px dashed var(--line) }
+.item:last-child { border-bottom: 0 }
+.item .text { min-width: 0 }
+.item .do { margin: 0 }
+.item .expect { margin: 2px 0 0; color: var(--muted); font-size: 14px }
+.item .expect::before { content: "Expect: "; font-weight: 700 }
+.item[data-s="works"] .do { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--ok) }
+.btns { display: flex; gap: 4px; align-items: start }
+.btns button { font: 700 13px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 8px; padding: 6px 9px; cursor: pointer; min-width: 40px }
+.btns .w[aria-pressed="true"] { background: var(--ok-soft); border-color: var(--ok); color: var(--ok) }
+.btns .b[aria-pressed="true"] { background: var(--bad-soft); border-color: var(--bad); color: var(--bad) }
+.note { grid-column: 1 / -1 }
+.note textarea { width: 100%; min-height: 56px; font: 14px/1.4 var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px }
+.item[data-s="broken"] .note textarea { border-color: var(--bad) }
+@media (max-width: 480px) { .item { grid-template-columns: 1fr } .btns { justify-content: flex-start } }
+
+.day { border-top: 1px solid var(--line); padding-block: 14px 4px }
+.day h2 { font: 700 1.2rem var(--display); margin: 0 0 6px }
+.entry { display: grid; grid-template-columns: 64px 1fr; gap: 4px 14px; padding-block: 10px }
+.entry time { font: 13px/1.6 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.entry h3 { font: 700 1.05rem var(--display); margin: 0; text-wrap: balance }
+.entry .tag { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-left: 6px; white-space: nowrap }
+.entry ul { margin: 4px 0 0; padding-left: 18px }
+.entry li { margin: 2px 0 }
+.entry .tests { font: 12px var(--mono); color: var(--muted) }
+@media (max-width: 480px) { .entry { grid-template-columns: 1fr } }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px }
+@media (prefers-reduced-motion: reduce) { summary::before { transition: none } }
+</style>
+
+<div class="band" aria-hidden="true"></div>
+<div class="wrap">
+  <header>
+    <h1>Moiré Studio Log</h1>
+    <p class="sub">What to try on the phones, and everything that has been built so far. Mark each check as it works or breaks; notes on broken ones tell Claude what to fix.</p>
+    <div class="meta">dk.cbavf.studio · S21 (Android 15) + S9+ (LineageOS 13) · build of 2026-10-16 22:00</div>
+  </header>
+  <nav class="tabs" aria-label="Sections">
+    <a href="#checklist" id="tab-checklist">Test checklist</a>
+    <a href="#changelog" id="tab-changelog">Changelog</a>
+  </nav>
+
+  <section id="checklist-view">
+    <div class="progress">
+      <div class="bar" aria-hidden="true"><i class="ok" id="bar-ok"></i><i class="bad" id="bar-bad"></i></div>
+      <div class="counts" id="counts"></div>
+      <div class="filters" role="group" aria-label="Show">
+        <button class="chip" data-f="all" aria-pressed="true">All</button>
+        <button class="chip" data-f="open" aria-pressed="false">To test</button>
+        <button class="chip" data-f="broken" aria-pressed="false">Broken</button>
+        <button class="chip" data-f="works" aria-pressed="false">Works</button>
+      </div>
+      <div class="sync" id="sync">Saved in this browser only.</div>
+    </div>
+    <div id="rooms"></div>
+  </section>
+
+  <section id="changelog-view" hidden>
+    <div id="log"></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// Checks: [id, what to do, what you should see]. Ids are stable so saved results survive edits to this page.
+const ROOMS = [
+  { id: "bug", title: "Unresponsive controls", intro: "Your report from 2026-10-15. Fixed so far: FFT brushes, Glitch crashes on big photos, Grab from Draw, Library losing its place.", items: [
+    ["bug-sweep", "In each room, try every button, chip, slider and field once.", "Each reacts at once. Note any that do nothing or lag."],
+    ["bug-num", "Tap the number next to any slider and type an exact value; try − / + / −− / ++.", "The slider jumps to the value; nudges move it by small steps."],
+    ["bug-crash", "If anything crashes, note the time here.", "Claude reads the phone log when it is connected."],
+  ]},
+  { id: "lib", title: "Library", items: [
+    ["lib-multi", "Long-press an image, tap more, send them to Draw / Animate / Sequence / Patch.", "All arrive, in the order picked."],
+    ["lib-usein", "Use in → each room: Draw, Animate, Sequence, Develop, FFT, Glitch, Camera, Loop, Patch, Compose, routing-nodes.", "The image arrives there; Undo in that room removes it."],
+    ["lib-recipe", "Reopen recipe on a saved Draw, Animate, Develop, FFT, Glitch, Compose and routing-nodes result.", "How it was made comes back."],
+    ["lib-tags", "Add a tag, filter by it, remove it.", "The filter shows only tagged images."],
+    ["lib-delete", "Delete an image without children, then try one with children.", "The first goes; the second is refused."],
+    ["lib-compare", "Compare with another image; check parents and ancestry on the detail page.", "A/B flicker works; the parent chain is right."],
+  ]},
+  { id: "draw", title: "Draw", items: [
+    ["draw-image", "+ Image: place a Library image; move, twist, pinch, drag a corner; opacity, blend, Fit / Fill / 1:1.", "It behaves like any layer and stretches along its own axes."],
+    ["draw-gen", "Ellipse hatch, the Sine profile, + Sine pair.", "Each draws, and its settings change it."],
+    ["draw-stretch", "Select a stroke and drag its corner handle.", "It stretches unevenly along its own axes."],
+    ["draw-layers", "New canvas, layer Up / Down, Undo after each.", "Each step undoes."],
+    ["draw-save", "Save.", "In Library and in Gallery (Pictures/Studio)."],
+  ]},
+  { id: "anim", title: "Animate", items: [
+    ["anim-libframes", "+ Library frames: pick images.", "They become frames in that order."],
+    ["anim-basics", "Grab / Replace / Edit in Draw, hold counts, onion skin, Play at different fps.", "Playback matches the settings."],
+    ["anim-recdrag", "Rec drag while dragging a layer; the step helper with N frames.", "Frames are captured as you drag; N shifted frames are added."],
+    ["anim-clear", "Clear all, then Undo.", "All frames go, then all come back."],
+    ["anim-barrier", "Barrier view: drag the slit sideways, then Save.", "Interleaved image and barrier appear in Library."],
+  ]},
+  { id: "seq", title: "Sequence + projector", items: [
+    ["seq-frame", "Frame shapes (Screen, First item, 1:1, 4:3, 3:4, 16:9, 9:16); per item Fit / Fill / 1:1 and Turn 90°.", "Preview and projector match; the projector never crops."],
+    ["seq-preview", "Play the preview after editing items.", "The right frames, never black."],
+    ["seq-proj", "Projector on the S9+, and at 60 / 90 Hz on the S21.", "The closing report shows few or no dropped vsyncs. (120 Hz on the S21 already works.)"],
+    ["seq-export", "Export GIF and MP4.", "Both in Library and in Gallery / Movies."],
+  ]},
+  { id: "bridge", title: "Bridge", items: [
+    ["br-gallery", "Send to Samsung Gallery editor → edit → save → inbox → import.", "The import is a child of what was sent."],
+    ["br-notes", "The same round trip with Samsung Notes.", "Same result."],
+    ["br-share", "Share an image into the studio from another app.", "Imported; a child of the send if you just sent to that app."],
+    ["br-rec", "Screen recording: approve the consent yourself, record, stop.", "In Library and Movies/Studio."],
+  ]},
+  { id: "cam", title: "Camera", items: [
+    ["cam-manual", "Shutter, ISO, focus, white balance, torch; on the S9+ aperture f/1.5 vs f/2.4.", "Each visibly changes the picture."],
+    ["cam-burst", "Burst with additive, mean and interlace stacking.", "Each result looks like its mode."],
+    ["cam-raw", "RAW on.", "A DNG is saved as a child of the JPEG."],
+    ["cam-overlay", "Preview overlay: grating, Draw canvas, barrier, Library image.", "Shown while framing, not in the photo."],
+    ["cam-restore", "Library → Open in Camera on a capture.", "The settings come back."],
+    ["cam-fv5", "FV-5 button.", "FV-5 opens; its photos reach the Bridge inbox."],
+  ]},
+  { id: "loop", title: "Loop (two phones)", items: [
+    ["loop-sync", "Link the phones; run synced mode.", "Projector shows a frame, camera captures it, the capture comes back as the next frame."],
+    ["loop-free", "Free-run mode.", "Both run on their own timers."],
+    ["loop-torch", "Torch strobe on the camera phone.", "The torch flickers during captures."],
+    ["loop-seq", "Sequence as the source.", "Next frame = next Sequence item."],
+    ["loop-q", "On 2026-10-14 at 16:30 a second Loop run started by itself. Was that you?", "Answer in the note."],
+  ]},
+  { id: "patch", title: "Patch bay", items: [
+    ["patch-sensors", "Routes from rotation, accelerometer, magnetometer, light, proximity.", "The Draw layer moves with the phone."],
+    ["patch-mic", "Microphone level (grant the permission yourself).", "Sound moves the layer."],
+    ["patch-touch", "Touch pad: drag on the live canvas.", "The routed value follows your finger."],
+    ["patch-remote", "Sensors from the other phone while linked (Patch live on both).", "One phone moves the other's layer."],
+    ["patch-rec", "Record to Animate while live; Undo in Animate, then Undo in Draw.", "One Undo removes the take; one takes back the session."],
+    ["patch-graph", "Open as graph, then ▶ Live in routing-nodes; Undo there.", "Same motion as the Patch bay; Undo brings the old graph back."],
+  ]},
+  { id: "dev", title: "Develop", items: [
+    ["dev-curve", "Tone curve: drag a point, tap to add, long-press to remove; Input / Output fields.", "The curve and the image follow."],
+    ["dev-light", "Exposure, temperature / tint, levels, hue mixer bands.", "Each changes the image smoothly."],
+    ["dev-masks", "Masks: lasso, brush, spot colour, with feather and invert.", "The adjustment stays inside the mask."],
+    ["dev-cube", "Import a .cube with the amount slider; Export look as .cube.", "Import applies; the export opens elsewhere."],
+    ["dev-style", "Style mix with another image (e.g. a Samsung AI Style result).", "Blends in by the amount."],
+    ["dev-presets", "Save and apply a preset; hold Before; Save full size.", "The look comes back; the save is full resolution."],
+  ]},
+  { id: "fft", title: "FFT lab", items: [
+    ["fft-brush", "Brushes (erase, keep, boost) on the spectrum.", "Rings show where you painted; the result changes."],
+    ["fft-filters", "Low / high / band-pass at 256, 512, 1024; Phase from another image.", "Each changes the result as named."],
+    ["fft-save", "Save.", "A child of both images."],
+  ]},
+  { id: "glitch", title: "Glitch lab", items: [
+    ["gl-params", "Bytes per pixel, width, stride, offset, channel order, chroma shift, fills.", "Each misreads the image differently."],
+    ["gl-jpeg", "JPEG generations with corruption on.", "Still opens."],
+    ["gl-sweep", "Sweep wall: tap a variant.", "It becomes the current setting."],
+    ["gl-save", "Save a result, also from a 12 MP photo.", "Saved, no crash."],
+  ]},
+  { id: "comp", title: "Compose", items: [
+    ["co-doc", "New document from a layer, the screen, or typed; white, black, transparent; Save transparent.", "The PNG keeps its transparency."],
+    ["co-layers", "Layers: Library image, Draw canvas, generators, paint, text, fill, linear and radial gradient.", "Each adds and edits."],
+    ["co-blend", "Opacity, 17 blend modes, clip to layer below, blend-if (shadows, highlights, feather).", "Each changes how the layer mixes."],
+    ["co-transform", "Move / pinch / twist, exact X / Y / scale / rotation, flip, rename, raise / lower, duplicate, delete.", "All work and undo."],
+    ["co-tools", "Select, Lasso, Crop, Brush, Eraser, Mask, Eyedropper.", "Each tool does its job."],
+    ["co-sel", "Selection → mask (feathered); fill / erase the selection on a paint layer.", "Edges are soft as set."],
+    ["co-mask", "Painted masks: hide / reveal, size, softness, invert.", "Soft edges stay soft."],
+    ["co-filters", "Each layer filter: blur, sharpen, noise, invert, desaturate, posterize, threshold, FFT pass, Glitch.", "Each shows in the composite."],
+    ["co-adjust", "Develop adjustments on a layer.", "Only that layer changes."],
+    ["co-color", "Colour picker: swatches, HSV, opacity, exact values.", "The brush / fill uses it."],
+    ["co-view", "Pinch-zoom the view; tap a spot.", "The top layer there is picked."],
+    ["co-save", "Save, then Reopen recipe.", "Every image used is a parent; the stack comes back."],
+  ]},
+  { id: "nodes", title: "routing-nodes", items: [
+    ["#", "Basics"],
+    ["nd-add", "Long-press empty space; search the Add menu.", "The node appears where you pressed."],
+    ["nd-link", "Drag output → input; try a wrong type.", "It links; wrong types are refused."],
+    ["nd-pick", "Drag a linked input away and drop it elsewhere.", "The link moves."],
+    ["nd-drop", "Drop a link on a node's body.", "It joins the best input."],
+    ["nd-view", "Drag nodes, pinch, pan, double-tap empty space.", "Double-tap frames everything."],
+    ["nd-field", "Tap a number field; drag one sideways.", "Exact entry; scrubbing."],
+    ["nd-preview", "◎ on any node.", "The backdrop shows that node."],
+    ["nd-pickimg", "Library Image → Pick image….", "The picture flows through."],
+    ["nd-edit", "Mute, Collapse, Duplicate, Delete, Select all, Rename.", "Each works and undoes."],
+    ["nd-run", "▶ Run on Save to Library and Send to Compose; Reopen recipe.", "The image arrives; the graph comes back."],
+    ["nd-presets", "Load each built-in preset; save your own; delete it.", "All load; yours persists."],
+    ["#", "Node Wrangler tools"],
+    ["nw-lazy", "Lazy connect: drag from one node to another.", "They link (this was broken before)."],
+    ["nw-mix", "Lazy mix: drag between two picture nodes.", "A Mix of the two appears."],
+    ["nw-cut", "Cut links: swipe across links.", "They are cut."],
+    ["nw-reroute", "Add reroutes: swipe across links; move a dot.", "Dots appear, move, and take the link's colour."],
+    ["nw-box", "Box select.", "Nodes inside the box are selected."],
+    ["nw-align", "Align (row / column); Swap A↔B on a Mix.", "Lined up; inputs swap."],
+    ["nw-insert", "Drop a lone node onto a link.", "It goes in between."],
+    ["nw-blend", "Blend for all on several Mix nodes.", "All change at once."],
+    ["#", "Live and time nodes"],
+    ["lv-presets", "▶ Live with each Live preset.", "Moves; fps shows in the corner."],
+    ["lv-sensor", "Sensor node with the phone tilted, and with smoothing.", "Follows the tilt, smoothly."],
+    ["lv-remote", "Sensor set to Phone: Other while linked in Loop.", "The other phone drives it."],
+    ["lv-seq", "Sequence Frames + Frame at + Clock.", "Plays the Sequence items."],
+    ["lv-rec", "Record to Animate: Arm, record, Stop.", "Frames land in Animate; one Undo removes the take."],
+    ["lv-hold", "Sample & Hold with a Clock Tick.", "Value steps on each tick."],
+    ["lv-stop", "Leave the room; start Patch live while nodes are live.", "Live stops in both cases."],
+    ["#", "Frames and groups"],
+    ["fg-frame", "Frame the selection; drag its label bar; drag its corner; Rename, Colour, Remove.", "Nodes move with it; it resizes; removing keeps the nodes."],
+    ["fg-group", "Group the selection.", "A Group node with the crossing links as sockets; same result."],
+    ["fg-enter", "⇥ Enter group; link from Group Input's +; Exit; Rename group.", "A new socket appears on the Group node."],
+    ["fg-field", "Type a value on the Group node's field.", "Changes the inside."],
+    ["fg-shared", "Add a second copy from Add → Group; edit inside one.", "Both change."],
+    ["fg-ungroup", "Ungroup.", "Nodes come back; same result."],
+    ["fg-undo", "Undo after each of these.", "Each undoes."],
+  ]},
+  { id: "two", title: "Two phones", intro: "Both phones need the build from 2026-10-16 22:00 (it adds a new message to the Loop link).", items: [
+    ["tp-send", "Link the phones in Loop; on one, load “Two phones: stream a live moiré to the other phone” and press ▶ Live.", "The status shows “sent N”."],
+    ["tp-recv", "On the other, load “Two phones: project what the other phone sends”.", "The backdrop shows the stream; the status shows “received N”."],
+    ["tp-proj", "Projector node → ▶ Full screen, with and without Live.", "The whole screen at full brightness; tap or Back closes."],
+    ["tp-once", "Send to Other Phone → ▶ Send once, without Live.", "A message says “Sent W×H”; the other phone shows it."],
+    ["tp-capture", "During a Loop run, From Other Phone on the projector phone.", "It shows each new capture."],
+    ["two-sync", "Each phone keeps its own project; nothing syncs. Is that fine for now?", "Answer in the note."],
+  ]},
+];
+
+// Changelog, newest first. Times are Danish local time.
+const LOG = [
+  { d: "2026-10-16", t: "22:00", title: "routing-nodes step 7: two-phone nodes", tests: 138, items: [
+    "Send to Other Phone: streams its input to the phone linked in Loop while Live (Max fps, Size, JPEG or PNG), or sends once.",
+    "From Other Phone: the latest picture received, or the latest Loop capture, with a Count that ticks up.",
+    "Projector: its input full screen at full brightness, live while Live runs, pixel-exact.",
+    "Two presets: stream a live moiré to the other phone; project what the other phone sends. That completes Stage 3.",
+  ]},
+  { d: "2026-10-16", t: "21:50", title: "Test checklist and this log", items: ["docs/TESTING.md and this page: every untested feature, by room, with results saved per check."] },
+  { d: "2026-10-16", t: "14:10", title: "routing-nodes step 6: frames and node groups", tests: 137, items: [
+    "Frames: labelled, tinted boxes; drag the label bar to move them with their nodes, the corner to resize; rename, recolour, remove.",
+    "Node groups (Ctrl+G): links crossing the selection become the group's sockets. Enter a group to edit it with Group Input / Output; link to + to add a socket.",
+    "Every copy of a group shares its insides; groups are listed in the Add menu; Ungroup restores the nodes and carries typed values inside.",
+    "Groups nest (never inside themselves); Live state is kept per copy; the backdrop and Run use the top graph.",
+    "Rename any node. S21 updated (port 36799).",
+  ]},
+  { d: "2026-10-16", t: "13:30", title: "routing-nodes step 5: Node Wrangler tools", tests: 131, items: [
+    "Box select, Lazy mix, Add reroutes (swipe across links), reroute dots that take on the type flowing in.",
+    "Auto-insert: drop a lone node on a link to put it in between. Align (row / column), Swap A↔B.",
+    "Patch bay → Open as graph: routes become Sensor / LFO → Drive Layer nodes.",
+    "Fixed: Lazy connect used the touch-down point as the drop point, so it never linked.",
+  ]},
+  { d: "2026-10-16", t: "03:45", title: "routing-nodes step 4: time nodes and Live", tests: 126, items: [
+    "▶ Live runs the graph every display frame. Nodes: Clock, LFO, Sensor (this phone or the linked one), Sample & Hold.",
+    "Animate Frames, Sequence Frames and Frame at to play a set; Layer Canvases (vector stack with blend); Drive Layer (a Patch route as a node).",
+    "Record to Animate: arm it; one Undo in Animate removes the take.",
+    "Previews render straight at preview size: the LFO moiré went from 8 to 18–23 fps on the S9+.",
+    "Four Live presets. Tested on the S9+: LFO sweep, a 90-frame recording, Animate playback.",
+  ]},
+  { d: "2026-10-16", t: "03:02", title: "Stage 3 begins: routing-nodes steps 1–3", tests: 117, items: [
+    "Node editor in the Blender style: typed, colour-coded sockets; bezier links; drag to link, pick links up, drop on a node to auto-connect.",
+    "Nodes: Library Image, Draw Canvas, Value, Grating, Radial Burst, Ellipse Hatch, Render, Math, Map Range, Transform, Develop, Mix (17 modes), Invert, Desaturate, Posterize, Threshold, Blur, Sharpen, Noise, FFT, Glitch, Viewer, Save to Library, Send to Compose.",
+    "Lazy evaluation with a per-node cache; backdrop preview of any node; Save / Send run full size and keep the graph as recipe.",
+    "Tools: Select, Lazy connect, Cut links; mute, collapse, duplicate; presets with four built-ins.",
+  ]},
+  { d: "2026-10-16", t: "02:08", title: "Compose stage 2: layers, blending, editing tools", tests: 108, items: [
+    "Tools: Select, Lasso, Brush, Eraser, Mask, Eyedropper, Crop. Paint, text, fill and gradient layers.",
+    "Blending: 17 modes, opacity, clip to layer below, blend-if. Per-layer filters incl. FFT pass and Glitch.",
+    "Selections to feathered masks; fill / erase selections; thumbnails, rename, flip; colour picker with exact values.",
+  ]},
+  { d: "2026-10-16", t: "01:52", title: "Compose stage 1: the main layered editor", tests: 102, items: [
+    "A GIMP-style, touch-first compositor: documents of any size on white, black or transparent.",
+    "Layers from Library, Draw snapshots and live generators; opacity, blend modes, transforms, painted masks, Develop adjustments.",
+    "Save with every image used as a parent; Reopen recipe brings the stack back.",
+  ]},
+  { d: "2026-10-16", t: "01:35", title: "Exact values everywhere; Clear all in Animate", tests: 97, items: [
+    "Tap any slider's number to type an exact value (comma works), with − / + / −− / ++ nudges. Shutter accepts 1/125, 8ms, 2s.",
+    "Develop curve points get Input / Output fields. Animate → Clear all (undoable).",
+  ]},
+  { d: "2026-10-15", t: "17:46", title: "Library routes to every room", tests: 95, items: [
+    "Use in → Draw, Animate, Sequence, Develop, FFT, Glitch, Camera (overlay), Loop (first frame), Patch.",
+    "Long-press to pick several images in order and send them together. Every arrival is undoable.",
+  ]},
+  { d: "2026-10-15", t: "17:00", title: "Sequence framing fixed", tests: 94, items: [
+    "Frame shapes (Screen, First item, 1:1, 4:3, 3:4, 16:9, 9:16); per item Fit / Fill / 1:1 and Turn 90°.",
+    "The projector scales down instead of cropping; the preview prepares frames once and plays in real time.",
+  ]},
+  { d: "2026-10-15", t: "15:16", title: "Library images in Draw and Animate", tests: 91, items: [
+    "Draw → + Image: image layers that move, twist, stretch and blend, and travel into Animate, barrier, Sequence, Camera overlay and Patch.",
+    "Animate → + Library frames.",
+  ]},
+  { d: "2026-10-15", t: "12:15", title: "FFT brushes and crash fixes", tests: 86, items: [
+    "FFT brushes switch to the spectrum, show rings, and Boost works under filters.",
+    "Fixed out-of-memory crashes in the Glitch lab on 12 MP photos; failed previews show a message instead of crashing the app.",
+  ]},
+  { d: "2026-10-14", t: "20:46", title: "Review pass over all eight steps", tests: 85, items: [
+    "Opening something from Library is undoable in every room; heavy previews stop when a newer edit arrives.",
+    "Library: correct parents for two-parent images, filters and tags, delete with confirmation. Pending list in docs/PENDING.md.",
+  ]},
+  { d: "2026-10-14", t: "20:26", title: "Step 8: FFT lab and Glitch lab", tests: 76, items: [
+    "FFT: spectrum views, low / high / band-pass, spectrum painting, phase swap.",
+    "Glitch: raw byte misreads, chroma shift, fills, JPEG generations with corruption, sweep wall.",
+  ]},
+  { d: "2026-10-14", t: "19:36", title: "Step 7: Develop", tests: 67, items: [
+    "Exposure, temperature / tint, levels, tone curve, 8-band hue mixer, baked into one LUT; .cube import and export.",
+    "Masks (lasso, brush, spot colour), style mix, presets, full-resolution save.",
+  ]},
+  { d: "2026-10-14", t: "17:47", title: "Step 6: Patch bay", tests: 60, items: [
+    "Sensors, microphone, touch pad and LFOs drive Draw layer parameters with range, curve and smoothing; the other phone's sensors over Loop.",
+    "Record to Animate while live.",
+  ]},
+  { d: "2026-10-14", t: "16:25", title: "Step 5: Camera and Loop", tests: 54, items: [
+    "Camera2 with manual controls, bursts with optical stacking, RAW, preview overlays.",
+    "Loop: two phones as projector and camera over TCP; the first real camera loop ran at 16:30.",
+  ]},
+  { d: "2026-10-14", t: "15:28", title: "Step 4: Bridge and watch folders", tests: 49, items: [
+    "Send to Samsung Gallery editor and Notes; inbox matches returns to sends; share target; screen recording.",
+    "S9+ Library restored (25 assets) after the lineage loss found in step 3.",
+  ]},
+  { d: "2026-10-14", t: "14:44", title: "Step 3: Sequence and projector", tests: 43, items: [
+    "Timeline at 60 / 90 / 120 Hz, vsync-exact projector, GIF and MP4 export.",
+    "Fixed: a large Library index could be set aside as corrupt (now streamed, recipes in their own files).",
+  ]},
+  { d: "2026-10-14", t: "01:04", title: "Step 2: Animate", tests: 32, items: [
+    "Frames as canvas recipes, onion skin, playback, Rec drag, step helper, barrier (scanimation) view and export.",
+  ]},
+  { d: "2026-10-13", t: "23:30", title: "Step 1: Draw and Library", tests: 24, items: [
+    "Grating and burst generators, stroke objects with stroke stacks, saved transforms, pen presets, lasso.",
+    "Library with lineage: every save records parents, operation, recipe, device and time.",
+  ]},
+  { d: "2026-10-13", t: "20:14", title: "Project started", items: ["Android Studio setup on Windows, adb over Tailscale to the S21 and S9+, architecture in docs/ARCHITECTURE.md."] },
+];
+
+const $ = (s, el = document) => el.querySelector(s);
+const state = {};           // id -> { s: "works" | "broken" | "", n: note }
+let db = null, filter = "all";
+const LOCAL_KEY = "moire-studio-checks";
+
+function loadLocal() { try { Object.assign(state, JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}")) } catch (e) {} }
+function saveLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(state)) } catch (e) {} }
+
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600) }
+
+function save(id) {
+  const v = state[id] || { s: "", n: "" };
+  saveLocal();
+  if (!db) return;
+  db.collection("checks").doc(id).set({ s: v.s || "", n: v.n || "", t: new Date().toISOString() })
+    .catch(e => toast("Not saved to your account: " + (e && e.message || "try again")));
+}
+
+function allItems() { return ROOMS.flatMap(r => r.items.filter(i => i[0] !== "#").map(i => ({ room: r.id, id: i[0] }))) }
+
+function renderRooms() {
+  const root = $("#rooms");
+  root.innerHTML = "";
+  for (const r of ROOMS) {
+    const d = document.createElement("details");
+    d.className = "room"; d.open = true; d.dataset.room = r.id;
+    const s = document.createElement("summary");
+    s.innerHTML = `<h2></h2><span class="n"></span>`;
+    s.querySelector("h2").textContent = r.title;
+    d.append(s);
+    if (r.intro) { const p = document.createElement("p"); p.className = "intro"; p.textContent = r.intro; d.append(p) }
+    for (const [id, doText, expect] of r.items) {
+      if (id === "#") { const g = document.createElement("div"); g.className = "group"; g.textContent = doText; d.append(g); continue }
+      const it = document.createElement("div");
+      it.className = "item"; it.dataset.id = id;
+      it.innerHTML = `<div class="text"><p class="do"></p><p class="expect"></p></div>
+        <div class="btns"><button class="w" aria-pressed="false" title="Works">✓</button><button class="b" aria-pressed="false" title="Broken">✕</button><button class="nb" title="Note">✎</button></div>
+        <div class="note" hidden><textarea id="note-${id}" placeholder="What happened? Which phone?"></textarea></div>`;
+      it.querySelector(".do").textContent = doText;
+      it.querySelector(".expect").textContent = expect;
+      d.append(it);
+    }
+    root.append(d);
+  }
+  root.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const it = b.closest(".item"); if (!it) return;
+    const id = it.dataset.id, v = state[id] || (state[id] = { s: "", n: "" });
+    if (b.classList.contains("nb")) { const n = it.querySelector(".note"); n.hidden = !n.hidden; if (!n.hidden) n.querySelector("textarea").focus(); return }
+    const want = b.classList.contains("w") ? "works" : "broken";
+    v.s = v.s === want ? "" : want;
+    if (v.s === "broken") it.querySelector(".note").hidden = false;
+    save(id); paint();
+  });
+  let noteTimer = {};
+  root.addEventListener("input", e => {
+    const ta = e.target.closest("textarea"); if (!ta) return;
+    const id = ta.closest(".item").dataset.id, v = state[id] || (state[id] = { s: "", n: "" });
+    v.n = ta.value;
+    clearTimeout(noteTimer[id]); noteTimer[id] = setTimeout(() => save(id), 700);
+  });
+}
+
+function paint() {
+  const items = allItems();
+  let ok = 0, bad = 0;
+  for (const r of ROOMS) {
+    const d = $(`details[data-room="${r.id}"]`);
+    let rOk = 0, rBad = 0, rAll = 0, shown = 0;
+    for (const it of d.querySelectorAll(".item")) {
+      const v = state[it.dataset.id] || {};
+      rAll++; if (v.s === "works") rOk++; if (v.s === "broken") rBad++;
+      it.dataset.s = v.s || "";
+      it.querySelector(".w").setAttribute("aria-pressed", v.s === "works");
+      it.querySelector(".b").setAttribute("aria-pressed", v.s === "broken");
+      const ta = it.querySelector("textarea");
+      if (document.activeElement !== ta) ta.value = v.n || "";
+      if (v.n) it.querySelector(".note").hidden = false;
+      const vis = filter === "all" || (filter === "open" && !v.s) || filter === v.s;
+      it.hidden = !vis; if (vis) shown++;
+    }
+    d.querySelectorAll(".group").forEach(g => g.hidden = filter !== "all");
+    d.hidden = shown === 0;
+    d.querySelector(".n").textContent = `${rOk + rBad}/${rAll}` + (rBad ? ` · ${rBad} broken` : "");
+    ok += rOk; bad += rBad;
+  }
+  const n = items.length;
+  $("#bar-ok").style.width = (100 * ok / n) + "%";
+  $("#bar-bad").style.width = (100 * bad / n) + "%";
+  $("#counts").innerHTML = `<span><b>${n - ok - bad}</b> to test</span><span><b>${ok}</b> work</span><span><b>${bad}</b> broken</span><span>${n} checks</span>`;
+}
+
+function renderLog() {
+  const root = $("#log");
+  const days = [...new Set(LOG.map(e => e.d))];
+  const fmt = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  for (const day of days) {
+    const sec = document.createElement("section"); sec.className = "day";
+    const h = document.createElement("h2"); h.textContent = fmt.format(new Date(day + "T12:00:00")); sec.append(h);
+    for (const e of LOG.filter(x => x.d === day)) {
+      const el = document.createElement("article"); el.className = "entry";
+      el.innerHTML = `<time></time><div><h3></h3><ul></ul></div>`;
+      el.querySelector("time").textContent = e.t;
+      el.querySelector("time").setAttribute("datetime", `${e.d}T${e.t}`);
+      el.querySelector("h3").textContent = e.title;
+      if (e.tests) { const s = document.createElement("span"); s.className = "tests"; s.textContent = ` · ${e.tests} tests`; el.querySelector("h3").append(s) }
+      for (const i of e.items) { const li = document.createElement("li"); li.textContent = i; el.querySelector("ul").append(li) }
+      sec.append(el);
+    }
+    root.append(sec);
+  }
+}
+
+function route() {
+  const log = location.hash === "#changelog";
+  $("#checklist-view").hidden = log; $("#changelog-view").hidden = !log;
+  $("#tab-checklist").toggleAttribute("aria-current", !log); if (!log) $("#tab-checklist").setAttribute("aria-current", "page");
+  $("#tab-changelog").toggleAttribute("aria-current", log); if (log) $("#tab-changelog").setAttribute("aria-current", "page");
+}
+
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+  filter = c.dataset.f;
+  document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", x === c));
+  paint();
+}));
+window.addEventListener("hashchange", route);
+
+loadLocal(); renderRooms(); renderLog(); paint(); route();
+
+// Saved to the account when the page runs on claude.ai; otherwise (a local file) this browser keeps it.
+(async () => {
+  const use = window.claude && window.claude.use;
+  if (!use) return;
+  const d = await window.claude.use("db");
+  if (!d) return;
+  db = d;
+  $("#sync").textContent = "Saved to your account: the same on every device.";
+  db.collection("checks").onSnapshot(snap => {
+    for (const doc of snap.docs) { const v = doc.data() || {}; state[doc.id] = { s: v.s || "", n: v.n || "" } }
+    saveLocal(); paint();
+  }, () => { $("#sync").textContent = "Couldn't reach your saved results; changes stay in this browser for now." });
+})();
+</script>
