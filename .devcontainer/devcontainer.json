@@ -1,0 +1,10 @@
+{
+  "name": "Moiré Studio",
+  "image": "mcr.microsoft.com/devcontainers/java:1-17-bookworm",
+  "hostRequirements": { "cpus": 4, "memory": "16gb" },
+  "containerEnv": { "ANDROID_HOME": "/opt/android-sdk", "ANDROID_SDK_ROOT": "/opt/android-sdk" },
+  "postCreateCommand": "bash .devcontainer/setup-android.sh",
+  "customizations": {
+    "vscode": { "extensions": ["mathiasfrohlich.Kotlin", "vscjava.vscode-gradle"] }
+  }
+}
