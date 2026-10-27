@@ -1,3 +1,5 @@
+# CI workflow, kept here until the GitHub login has the "workflow" scope.
+# To turn it on: GitHub website > Add file > Create new file > .github/workflows/build.yml, paste this file.
 name: Build and test
 on:
   push: { branches: [main, sprint] }
