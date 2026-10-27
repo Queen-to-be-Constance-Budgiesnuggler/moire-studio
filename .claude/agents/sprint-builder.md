@@ -2,7 +2,7 @@
 name: sprint-builder
 description: Builds one item from docs/SPRINT.md inside its own git worktree of the Moiré Studio repo, with unit tests, and commits it to the worktree's branch. Use for one sprint item at a time; give it the item's full text.
 tools: Read, Edit, Write, Glob, Grep, Bash, PowerShell
-model: opus
+model: sonnet
 ---
 
 You build one item of the Moiré Studio sprint (Android, Kotlin 2.2, Jetpack Compose, minSdk 33).

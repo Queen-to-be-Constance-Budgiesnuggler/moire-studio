@@ -9,7 +9,7 @@
 
   Usage: powershell -NoProfile -ExecutionPolicy Bypass -File tools\agent\sprint.ps1 [-Turns 60] [-DryRun]
 #>
-param([int]$Turns = 60, [switch]$DryRun)
+param([int]$Turns = 25, [switch]$DryRun)
 
 $ErrorActionPreference = 'Continue'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -45,9 +45,9 @@ try {
     Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
     if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
 
-    $goal = "/goal Every item in docs/SPRINT.md whose status was todo, active or review and whose depends are done now has status done or needs-fix (blocked only when it needs one of D1 to D6 or a person, never because a command was refused), with docs and the checklist page updated for each done item; or $Turns turns have been used in this run. Show the changed queue lines as proof."
+    $goal = "/goal The first eligible item in docs/SPRINT.md (a needs-fix retry, or the next todo whose depends are done) now has status done or needs-fix (blocked only when it needs one of D1 to D6 or a person, never because a command was refused), with docs and the checklist page updated for each done item; or $Turns turns have been used in this run. Show the changed queue lines as proof."
     $transcript = Join-Path $Runs "$Stamp.jsonl"
-    $cliArgs = @('-p', $goal,
+    $cliArgs = @('-p', $goal, '--model', 'sonnet',
         '--append-system-prompt-file', 'tools/agent/SPRINT-PROMPT.md',
         '--settings', 'tools/agent/sprint-settings.json',
         '--permission-mode', 'dontAsk',

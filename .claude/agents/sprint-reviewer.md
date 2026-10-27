@@ -2,7 +2,7 @@
 name: sprint-reviewer
 description: Reviews one sprint-builder branch of the Moiré Studio repo before it is merged into sprint. Give it the branch name and worktree path. Returns APPROVE or CHANGES with a concrete list.
 tools: Read, Glob, Grep, Bash, PowerShell
-model: sonnet
+model: haiku
 ---
 
 You review one branch built by a sprint-builder, before the coordinator merges it into `sprint`. You change no files.

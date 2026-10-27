@@ -9,7 +9,7 @@ question under "Questions from the workers" in `docs/SPRINT.md`, mark the item `
 1. Read `docs/SPRINT.md`, `docs/PENDING.md` and the end of `docs/SPRINT-REPORT.md` (if it exists) to see where the last run stopped.
    An item left `active` or `review` by a run that ended early: check its worktree branch (`git worktree list`, `git branch`) and
    either finish it or set it back to `todo`.
-2. First retry `needs-fix` items once each: give a builder the item's recorded findings and its existing branch (start it with
+2. Lean rule: one item per run, then stop. Read only what the item needs; do not reread whole docs. First retry `needs-fix` items once each: give a builder the item's recorded findings and its existing branch (start it with
    `isolation: "worktree"` and tell it to `git merge <branch>` into its worktree first, then fix). Write "retried <date>" under the
    item; a needs-fix item that was already retried is left for a person. Then pick the next one or two items in order whose
    status is `todo` and whose `depends:` are `done` (D-items are never done by you).
