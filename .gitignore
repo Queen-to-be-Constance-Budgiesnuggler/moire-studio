@@ -1,0 +1,22 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+captures/
+.cxx/
+*.apk
+*.aab
+.template-backup/
+.recovery/
+
+# Screen dumps from adb UI testing
+ui.xml
+
+# Python caches, Claude session files, sprint runner state
+__pycache__/
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+tasks/sprint-runs/
+tasks/sprint.lock

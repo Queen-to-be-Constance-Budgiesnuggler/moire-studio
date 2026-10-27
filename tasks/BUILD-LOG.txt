@@ -1,0 +1,12 @@
+build start 2026-10-21 18:26:10
+[18:38] T-002, T-003 accepted
+[18:46] T-004 accepted
+[18:48] T-005 accepted
+[18:58] T-006 failed 3 attempts; fixed by hand (3 spec deviations)
+[19:05] T-012 accepted
+[19:05] T-007 failed 3 attempts (bad import); written by hand
+[19:07] T-008 accepted (Locale.US added)
+[19:10] T-009 accepted
+[19:12] T-010 accepted
+[19:12] T-011 failed 3 attempts; written by hand (+replaceCurrent)
+[2026-10-23 14:36] T-013 failed 3 attempts on one test (GateDelay history trim); 13 of 14 tests passed; fixed by hand

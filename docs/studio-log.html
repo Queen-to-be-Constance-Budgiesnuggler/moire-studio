@@ -1,0 +1,2111 @@
+<title>Moiré Studio Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; a moiré band heads the page, tabs switch between the test checklist and the changelog. */
+:root {
+  --bg: #eef0f5; --surface: #ffffff; --ink: #16181e; --muted: #5a6072; --line: #d6dae4;
+  --accent: #5a48d8; --accent-soft: #e7e3ff; --ok: #1d7f47; --ok-soft: #dcf3e6; --bad: #bf3426; --bad-soft: #fde4e0;
+  --display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111217; --surface: #1a1c23; --ink: #e8e9ef; --muted: #9ba1b2; --line: #2c2f3b;
+  --accent: #b3a6ff; --accent-soft: #2b2650; --ok: #55c98a; --ok-soft: #173326; --bad: #ff8070; --bad-soft: #3d1d19; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111217; --surface: #1a1c23; --ink: #e8e9ef; --muted: #9ba1b2; --line: #2c2f3b;
+  --accent: #b3a6ff; --accent-soft: #2b2650; --ok: #55c98a; --ok-soft: #173326; --bad: #ff8070; --bad-soft: #3d1d19; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); padding-inline: 16px; padding-block: 0 48px }
+.wrap { max-width: 760px; margin: 0 auto }
+.band { height: 64px; margin-inline: -16px; position: relative; overflow: hidden;
+  background:
+    repeating-linear-gradient(90deg, var(--ink) 0 1.4px, transparent 1.4px 6px),
+    var(--bg); }
+.band::after { content: ""; position: absolute; inset: -40px; opacity: .9;
+  background: repeating-linear-gradient(93.2deg, var(--ink) 0 1.4px, transparent 1.4px 6px); }
+header { padding-block: 20px 8px; display: grid; gap: 6px }
+h1 { font: 700 2rem/1.1 var(--display); margin: 0; letter-spacing: -.01em; text-wrap: balance }
+.sub { color: var(--muted); margin: 0; max-width: 62ch }
+.meta { font: 13px/1.4 var(--mono); color: var(--muted) }
+nav.tabs { display: flex; gap: 6px; margin-block: 14px 4px; border-bottom: 1px solid var(--line) }
+nav.tabs a { font: 600 15px var(--display); color: var(--muted); text-decoration: none; padding: 8px 12px; border-bottom: 2px solid transparent; margin-bottom: -1px }
+nav.tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent) }
+a:focus-visible, button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.progress { display: grid; gap: 8px; padding-block: 14px }
+.bar { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; display: flex }
+.bar i { display: block; height: 100% }
+.bar .ok { background: var(--ok) } .bar .bad { background: var(--bad) }
+.counts { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 14px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.counts b { color: var(--ink) }
+.filters { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 5px 12px; cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink) }
+.sync { font-size: 13px; color: var(--muted) }
+
+details.room { border-top: 1px solid var(--line); padding-block: 4px }
+details.room > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px; padding-block: 12px }
+details.room > summary::-webkit-details-marker { display: none }
+summary h2 { font: 700 1.2rem var(--display); margin: 0; flex: 1; min-width: 0 }
+summary .n { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap }
+summary::before { content: "▸"; color: var(--muted); font-size: 13px; transition: transform .15s }
+details[open] > summary::before { transform: rotate(90deg) }
+.intro { color: var(--muted); font-size: 14px; margin: -4px 0 8px }
+.group { font: 600 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px }
+
+.item { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px dashed var(--line) }
+.item:last-child { border-bottom: 0 }
+.item .text { min-width: 0 }
+.item .do { margin: 0 }
+.item .expect { margin: 2px 0 0; color: var(--muted); font-size: 14px }
+.item .expect::before { content: "Expect: "; font-weight: 700 }
+.item[data-s="works"] .do { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--ok) }
+.btns { display: flex; gap: 4px; align-items: start }
+.btns button { font: 700 13px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 8px; padding: 6px 9px; cursor: pointer; min-width: 40px }
+.btns .w[aria-pressed="true"] { background: var(--ok-soft); border-color: var(--ok); color: var(--ok) }
+.btns .b[aria-pressed="true"] { background: var(--bad-soft); border-color: var(--bad); color: var(--bad) }
+.auto { display: inline-block; margin-top: 4px; font: 600 12px var(--mono); border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); color: var(--muted) }
+.auto[data-a="seen"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft) }
+.auto[data-a="touched"], .auto[data-a="partial"] { border-style: dashed }
+.auto[data-a="warn"] { border-color: var(--bad); color: var(--bad) }
+.note { grid-column: 1 / -1 }
+.plan-lead { font-size: 17px; margin: 14px 0 6px; max-width: 62ch }
+.phase { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px 14px; margin: 10px 0 }
+.phase h3 { font: 700 1.05rem var(--display); margin: 0 0 4px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap }
+.phase .tag { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px }
+.phase[data-status="active"] { border-color: var(--accent) }
+.phase[data-status="active"] .tag, .phase[data-status="decide"] .tag { color: var(--accent); border-color: var(--accent) }
+.phase ul { margin: 4px 0 0; padding-left: 18px }
+.phase li { margin: 3px 0 }
+.pend h3 { font: 700 1rem var(--display); margin: 18px 0 2px }
+.pend .sec-count { font: 12px var(--mono); color: var(--muted) }
+.pend ol { margin: 4px 0 0; padding-left: 26px }
+.pend li { margin: 4px 0 }
+.pend li[data-state="partial"]::marker { color: var(--accent) }
+.pend li[data-state="done"] { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--ok) }
+.pend li.blocked { color: var(--bad) }
+.pend .tag { font: 600 11px var(--mono); letter-spacing: .04em; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px }
+.pend-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 0 }
+.note textarea { width: 100%; min-height: 56px; font: 14px/1.4 var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px }
+.item[data-s="broken"] .note textarea { border-color: var(--bad) }
+.note textarea { min-height: 38px; resize: vertical; overflow: hidden }
+.btns .nb.has { color: var(--accent); border-color: var(--accent) }
+.fb { margin: 8px 0 10px }
+.fb label { display: block; font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px }
+.fb textarea { width: 100%; min-height: 46px; font: 14px/1.4 var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px; resize: vertical; overflow: hidden }
+.fb.overall { margin-top: 4px }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 8px }
+.entry .fb { grid-column: 1 / -1 }
+aside.notice { border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; margin-block: 10px; font-size: 14px }
+aside.notice b { font-family: var(--display) }
+@media (max-width: 480px) { .item { grid-template-columns: 1fr } .btns { justify-content: flex-start } }
+
+.day { border-top: 1px solid var(--line); padding-block: 14px 4px }
+.day h2 { font: 700 1.2rem var(--display); margin: 0 0 6px }
+.entry { display: grid; grid-template-columns: 64px 1fr; gap: 4px 14px; padding-block: 10px }
+.entry time { font: 13px/1.6 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.entry h3 { font: 700 1.05rem var(--display); margin: 0; text-wrap: balance }
+.entry .tag { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-left: 6px; white-space: nowrap }
+.entry ul { margin: 4px 0 0; padding-left: 18px }
+.entry li { margin: 2px 0 }
+.entry .tests { font: 12px var(--mono); color: var(--muted) }
+@media (max-width: 480px) { .entry { grid-template-columns: 1fr } }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px }
+@media (prefers-reduced-motion: reduce) { summary::before { transition: none } }
+</style>
+
+<div class="band" aria-hidden="true"></div>
+<div class="wrap">
+  <header>
+    <h1>Moiré Studio Log</h1>
+    <p class="sub">What to try on the phones, and everything that has been built so far. Mark each check as it works or breaks; notes on broken ones tell Claude what to fix.</p>
+    <div class="meta">dk.cbavf.studio · S21 (Android 15) + S9+ (LineageOS 13) · build of 2026-10-21 23:10</div>
+  </header>
+  <aside class="notice">
+    <b>Decide before release:</b> whether sound processing joins the studio (a DAW mode), and the long-term question of scripting languages and stacks.
+    <br><b>Next dev session after the pilot:</b> set up a scheduled agentic workflow for the project, and research how.
+  </aside>
+  <nav class="tabs" aria-label="Sections">
+    <a href="#plan" id="tab-plan">Plan</a>
+    <a href="#checklist" id="tab-checklist">Test checklist</a>
+    <a href="#changelog" id="tab-changelog">Changelog</a>
+  </nav>
+
+  <section id="plan-view" hidden>
+    <div id="plan"></div>
+  </section>
+
+  <section id="checklist-view" hidden>
+    <div class="progress">
+      <div class="bar" aria-hidden="true"><i class="ok" id="bar-ok"></i><i class="bad" id="bar-bad"></i></div>
+      <div class="counts" id="counts"></div>
+      <div class="filters" role="group" aria-label="Show">
+        <button class="chip" data-f="all" aria-pressed="true">All</button>
+        <button class="chip" data-f="open" aria-pressed="false">To test</button>
+        <button class="chip" data-f="broken" aria-pressed="false">Broken</button>
+        <button class="chip" data-f="works" aria-pressed="false">Works</button>
+        <button class="chip" data-f="auto" aria-pressed="false">Done in use</button>
+      </div>
+      <div class="sync" id="sync">Saved in this browser only.</div>
+    </div>
+    <div class="fb overall"><label for="fb-general">Overall pilot feedback</label><textarea id="fb-general" data-fb="general" placeholder="How did the whole thing feel? What should come first?"></textarea></div>
+    <div class="tools">
+      <button class="chip" id="copy-fb" type="button">Copy all feedback</button>
+      <button class="chip" id="dl-fb" type="button">Download JSON</button>
+    </div>
+    <div id="rooms"></div>
+  </section>
+
+  <section id="changelog-view" hidden>
+    <div id="log"></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// Checks: [id, what to do, what you should see]. Ids are stable so saved results survive edits to this page.
+const ROOMS = [
+  { id: "s15b-clone-heal", title: "Compose: clone and heal brush", intro: "Sprint S15b. Open Compose with a paint layer that has some colour.", items: [
+    ["s15b-clone-paint-only", "Select a non-paint layer (image or solid) and look at the toolbar.", "Clone and Heal chips are not shown."],
+    ["s15b-clone-source", "On a paint layer, select Clone tool, tap once on the canvas.", "A pink crosshair appears at the tapped point."],
+    ["s15b-clone-paint", "With the source set, drag elsewhere on the same paint layer.", "Pixels from the source area appear at the destination with soft edges; no dark fringes."],
+    ["s15b-heal-colour", "Switch to Heal, drag on a differently-coloured area.", "Copied texture matches the destination's surrounding colour."],
+    ["s15b-clone-undo", "After a clone stroke, tap Undo.", "The clone stroke disappears in one step."],
+    ["s15b-clone-source-reset", "Set clone source, tap a different layer and back.", "Clone source crosshair is gone; you must set it again."],
+  ]},
+  { id: "s18-bridge-watch", title: "Bridge: folder watching", intro: "Sprint S18. Open Bridge; needs media access granted.", items: [
+    ["s18-fv5-capture", "Open Bridge, launch FV-5, take a photo, return to the studio.", "The new image appears in the inbox within a few seconds without pulling to refresh."],
+    ["s18-screenshot-detect", "Open Bridge, take a screenshot (power + volume), return.", "The screenshot appears in the inbox shortly after returning."],
+    ["s18-background-stop", "Open Bridge, switch to another app for 10 seconds, return.", "No crash; observers restart cleanly."],
+    ["s18-no-crash-missing-folder", "On a phone without Pictures/FV5, open Bridge.", "No crash; observers start for the folders that exist."],
+  ]},
+  { id: "r06-vector3d", title: "3D low-poly room", intro: "Sprint R06. Open 3D from the rooms list.", items: [
+    ["r06-orbit", "Open 3D, drag across the picture, then pinch.", "The view turns around the striped cube and floor; pinching zooms in and out."],
+    ["r06-moire", "In Shape, set Opacity to 50 %.", "The back faces' lines show through the front ones and moiré bands appear."],
+    ["r06-svg", "In Save, tap \"Save SVG\" and open the file from Download/Studio.", "It looks the same as the view, with clean vector lines."],
+  ]},
+  { id: "s17-sync", title: "Phone-to-phone sync", intro: "Sprint S17. Link both phones in Loop first.", items: [
+    ["s17-asset", "Link both phones in Loop. On phone A: Library, open a picture, Send to, Other phone.", "Both phones show a toast. The picture is in B's Library with the same tags, and \"Reopen recipe\" works."],
+    ["s17-project", "With the phones linked, tap Loop, Send, This project on A.", "B says \"Got project …\". The project is listed in B's Studio, File, and opens."],
+    ["s17-resume", "Send a large project and press Home on A halfway, then come back and send again.", "The Loop room says \"Sending paused\". The percentage picks up near where it stopped, not at 0 %."],
+  ]},
+  { id: "s08-plugins", title: "Plugins: behaviour, parade scope, share", intro: "Sprint S08. Use the Forge and Studio → Plugins.", items: [
+    ["s08-parade", "Plugins room, RGB parade, set Scope in to Develop · Developed.", "Three traces (red, green, blue) of the picture."],
+    ["s08-behaviour", "Forge: slider X, Give it a behaviour, add an LFO step, add output Level fed by the LFO, Save.", "Plugins room shows a moving Level bar."],
+    ["s08-cable", "UI Editor: cable from \"Level (out)\" to a slider.", "The slider follows Level."],
+    ["s08-share", "Studio → Plugins, Share… on an installed plugin.", "The share sheet opens with a .studiomodule file."],
+    ["s08-pause", "With an LFO plugin on, leave the app and come back.", "Level moves again, with no errors."],
+  ]},
+  { id: "s15-compose", title: "Compose: per-layer Develop, handles, fonts", intro: "Sprint S15. Use a Compose project with a photo layer and a text layer.", items: [
+    ["s15-layer-develop", "Pick a photo layer, Adjust → Curve, drag a point; then LUT → Import .cube.", "Only that layer changes; Save matches the screen."],
+    ["s15-handles", "Move tool: drag a corner, a side handle, then the round knob.", "Even scale, one-axis stretch, turn; Undo reverts each drag."],
+    ["s15-fonts", "Add Text, pick Serif, Italic, Centre, then Script on the layer.", "The text redraws in each font, still centred where it was."],
+  ]},
+  { id: "s14-print", title: "Animate: barrier print size", intro: "Sprint S14. Needs two or more frames in Barrier view.", items: [
+    ["s14-paper-a4", "Pick A4 and 300, then press Save.", "The line reads \"A4 at 300 dpi: 2480 × 3508 px…\"; both saved files are 2480 × 3508 (3508 × 2480 for a wide canvas)."],
+    ["s14-clamp", "Pick A4 and 600.", "The line turns red, shows about 498 dpi and says \"600 dpi is too big for one image\"; the save still works."],
+    ["s14-screen", "Pick Screen and save.", "The dpi chips are greyed out; the files are the canvas size, as before."],
+    ["s14-print-align", "Save at A5 and 150, print both files at 100 %, and lay the barrier over the image.", "The slits line up with the strips."],
+  ]},
+  { id: "s12-themes", title: "Themes on canvas areas", intro: "Sprint S12. Pick a theme in Studio → Preferences.", items: [
+    ["s12-nodes-theme", "Pick Nord, open Node Lab with a few nodes.", "Canvas, grid and node bodies are Nord blue-greys; a selected node has a light blue border."],
+    ["s12-nodes-light", "Pick Gruvbox light, open Node Lab, select a node and drag a selection box.", "Light cream canvas with dark text on the nodes; the selection is Gruvbox orange-brown."],
+    ["s12-rack-theme", "Pick Dracula, open Node Lab → Studio routing, open All cables and one module.", "Panels and labels use Dracula colours; cables keep their type colours."],
+    ["s12-default-same", "Pick Studio (default), open Node Lab and the rack.", "Both look as before (dark grey canvas, orange selection)."],
+    ["s12-touchpad-theme", "Pick Catppuccin Mocha, add and select a Touch Pad node.", "The pad strip uses the theme's raised surface with light cross lines."],
+  ]},
+  { id: "s04-nodes", title: "Node Lab: Touch Pad, Smooth, Switch", intro: "Sprint S04. Build the graph from the Add menu.", items: [
+    ["s04-touchpad", "Add a Touch Pad (Min 0, Max 360); link X to a Grating's Angle; select it, press Live, drag on the pad under the toolbar.", "The grating turns as you drag; one Undo takes back the whole drag."],
+    ["s04-touchpad-down", "Link Down to an Envelope's Gate and the Envelope to the Grating's Line width; press and hold the pad, then let go.", "The lines thicken while you hold and thin out after you let go."],
+    ["s04-smooth", "Put a Smooth (Rise 1 s, Fall 0) between Touch Pad X and the Angle; with Live on, jump your finger left, then right.", "The angle drifts up over about a second, but snaps back at once."],
+    ["s04-switch", "Add a Switch (A 0, B 45) with a Gate Switch on Select; flip the gate, then set Mode to Fade and move Select.", "Pick jumps between 0° and 45°; Fade moves smoothly between them."],
+    ["s04-patch-touch", "In the Patch bay, add a Touch Y route with some smoothing and tap Open as graph.", "Touch Pad, Smooth and Drive Layer appear; no \"(no touch pad yet)\" label."],
+  ]},
+  { id: "s10-sensor-env", title: "Sensor trigger for envelopes", intro: "Sprint S10. Needs the sensors on (Studio → Sensors).", items: [
+    ["s10-sensor-trigger", "In Draw, long-press a slider's name, \"Add envelope…\", Trigger: Sensor, Light.", "The G button goes away; the hint says the envelope starts when the sensor rises above the level."],
+    ["s10-sensors-off", "With the sensors off, tap \"Switch sensors on\" in that dialog.", "\"Light now: NN %\" appears and changes as you cover and uncover the light sensor."],
+    ["s10-threshold", "Set Level to the middle of what Light reads, then cover and uncover the sensor.", "The slider follows when the light rises above the level and goes back when it drops below."],
+    ["s10-band", "Set Band to 30 % and hold the light near the level.", "The slider does not flicker."],
+    ["s10-falling", "Choose \"Falls below\".", "The envelope starts when you cover the sensor."],
+    ["s10-background", "Turn the sensors on, then press Home for a minute.", "The sensors and mic switch off while the studio is in the background and come back on return."],
+  ]},
+  { id: "s05-groups", title: "Node Lab: group sockets and group presets", intro: "Sprint S05. Build a group in the Node Lab first, with links in and out.", items: [
+    ["s05-socket-reorder", "Open the group, tap \"Sockets…\", press ↓ on the first input.", "The input moves down on the Group node outside; its link moves with it; the picture stays the same."],
+    ["s05-socket-remove", "In \"Sockets…\", tap Remove on a Value input that has a number typed on the Group node; then Undo.", "The socket and its link go; Undo brings both back, with the number."],
+    ["s05-socket-every-use", "Duplicate a Group node, open one, and remove an output.", "Both Group nodes lose that output and the links it fed."],
+    ["s05-preset-save", "Inside a group, tap \"Save as preset\", name it, then open Presets.", "It is listed under \"Groups\", not under \"Yours\"."],
+    ["s05-preset-add", "Start a new empty graph, open Presets, tap the group preset.", "A Group node appears in view; \"Enter group\" shows the same inside as the one saved."],
+    ["s05-preset-restart", "Save a group preset, close and reopen the app, open Presets.", "The group preset is still under \"Groups\"."],
+  ]},
+  { id: "s16-feedback", title: "Feedback digest: never used; catalog entries", intro: "Sprint S16. The first two checks run on the Pi; the rest on a phone with feedback on.", items: [
+    ["s16-digest-never-used", "On the Pi, copy server.py and usecases.json over, then run: python3 server.py digest --hours 24", "A \"Never used\" part lists unopened rooms, untapped buttons per opened room, and unmoved sliders."],
+    ["s16-digest-no-catalog", "Run the same with --catalog /nonexistent.json.", "\"Never used\" lists only rooms, with no error."],
+    ["s16-slit-evidence", "With feedback on, choose Ramp, Wave and Random in Slit-scan and move Strength and Seed; the next night run server.py evidence.", "n21slit-time shows as seen."],
+    ["s16-fft-evidence", "In FFT, pick LowPass and drag Radius; then check the evidence.", "n21fft-update shows as seen."],
+    ["s16-draw-export", "In Draw, tap Hide group, then Save; then check the evidence.", "n21draw-export shows as seen (it used to count the wrong Hide button)."],
+  ]},
+  { id: "s06-compose-stack", title: "Node Lab: Compose Stack", intro: "Sprint S06. Make two layers in Compose first.", items: [
+    ["s06-stack-room", "Add a Compose Stack in Node Lab and link it to a Viewer.", "The backdrop shows the same picture as Compose."],
+    ["s06-stack-live", "Patch something into Compose Layer 1 in the Rack; then link a Library Image node into the node's Layer 1.", "The Library picture replaces the live layer, at the same place and width."],
+    ["s06-stack-add", "With no live layers in Compose, link a Library Image into Layer 3.", "The picture appears on top of the stack, fitted inside it."],
+    ["s06-stack-hide", "Set Unlinked to Hide on a node whose room has a Rack-fed live layer and nothing linked.", "That live layer is gone from the preview; the other layers stay."],
+    ["s06-stack-refresh", "Change a layer's opacity in Compose, then go back to Node Lab.", "The preview shows the change."],
+    ["s06-stack-save", "Link the node into Save to Library and tap Run.", "A full-size picture of the stack is saved in the Library."],
+  ]},
+  { id: "s13-draw-size", title: "Draw: render size", intro: "Sprint S13. Save is always the same picture; only the pixel count changes.", items: [
+    ["s13-size-menu", "In Draw, tap \"Size: Screen\" next to Save.", "A menu with Screen, 2×, 3×, 4×, 4096 px and 6000 px, each with its pixel size; the canvas does not change size."],
+    ["s13-save-2x", "Pick 2×, then tap Save.", "The message ends in a size twice the canvas; the Library image has that size and sharp lines."],
+    ["s13-clamp-4x", "On a tall phone canvas, open the menu.", "The 4× line is smaller than 4× and says \"4× is too big for one image\"; saving at 4× works."],
+    ["s13-lock-per-piece", "Pick 4096 px, close the app, reopen Draw.", "The button still says \"Size: 4096 px\"; New canvas sets it back to Screen."],
+    ["s13-screen-exact", "Save on Screen.", "The message has no size and the image is exactly the canvas size, as before."],
+    ["s13-subtract-hires", "Set a grating's blend to Subtract, pick 3×, then Save.", "It saves without a crash; the subtracted lines are sharp."],
+  ]},
+  { id: "s09-midi", title: "MIDI in and out", intro: "Sprint S09. Needs a USB MIDI keyboard (or any MIDI device) and the rack.", items: [
+    ["s09-midi-list", "Plug in a USB MIDI keyboard, open the studio's back, go to MIDI in and tap Find devices.", "The keyboard's name appears as a button."],
+    ["s09-midi-in-cc", "Switch MIDI in on, patch A into a Signal node, and move the keyboard's mod wheel.", "The status line shows CC 1 and the signal moves from 0 to 1."],
+    ["s09-midi-gate", "Patch MIDI in's Gate into a gate input, then hold a key and let it go.", "The gate is on while the key is held and off after; D shows how hard the key was struck."],
+    ["s09-midi-out", "On a device that takes MIDI, switch MIDI out on and patch a Sensors jack into A.", "The device gets CC 1 changes; the status line shows CC 1."],
+    ["s09-midi-background", "With MIDI in on, press Home, wait, then come back.", "While away the device is closed and keys do nothing. Back in the studio it reads keys again."],
+    ["s09-midi-none", "On a phone with nothing plugged in, switch MIDI in on.", "The button turns off and says no device to read from."],
+  ]},
+  { id: "r02-calc", title: "Calculator room", intro: "Sprint R02. Open Calculator from the room list.", items: [
+    ["r02-calc-basics", "Type 2 * (3 + 4) and press Enter, then ans + 1.", "14, then 15. Both lines show in History, newest on top."],
+    ["r02-calc-units", "Type 100 °C in °F, then 5 km + 300 m.", "212 °F, then 5.3 km."],
+    ["r02-calc-bases", "Type 255, press Enter, then 0xff & 0b1010 in bin.", "Under 255: dec 255, hex 0xff, bin 0b11111111, oct 0o377. The second line gives 0b1010."],
+    ["r02-calc-vars", "Type r = 2.5, then r * 2, then tap the r = 2.5 chip.", "The result is 5; tapping the chip puts r in the field."],
+    ["r02-calc-control", "Type 1.5, then Send to a control… → Develop · Exposure; then open Develop.", "A short message says it was set to 1.5; Develop's exposure shows 1.50 EV."],
+    ["r02-calc-jack", "Tap Result jack: not patched → Glitch lab · Seed, then type 42.", "The button shows Result jack → Glitch lab · Seed, and Glitch's seed follows the result."],
+  ]},
+  { id: "r03-math", title: "Math room", intro: "Sprint R03. Open Math from the room list; it uses a Library image.", items: [
+    ["r03-browse", "Open Math and tap each function chip.", "Each shows its description and a curve; Linear is the diagonal line, Clock gate is four on/off steps."],
+    ["r03-param", "On Exponential, drag its first slider, then tap Reset under it.", "The curve and the picture change as you drag, and Reset brings them back."],
+    ["r03-apply", "Pick a Library image, choose R, set Mix to 50 %, then turn Before on and off.", "Only the red levels change, about halfway; Before shows the image as it was."],
+    ["r03-save", "Tap Save to Library, then open the Library.", "A new image appears as a child of the source image, and a \"Saved … generation …\" message shows."],
+  ]},
+  { id: "s07a-rack", title: "Rack: projector inputs and Draw image layer", intro: "Sprint S07a. Needs the rack (Node Lab → Studio routing); the Loop check needs two phones.", items: [
+    ["s07a-draw-layer", "Rack: plug Camera \"Last capture\" into Draw \"Image layer\", then open Draw.", "A new image layer with the last capture; its readout says \"live from the rack\". It updates after a new capture."],
+    ["s07a-draw-save", "With that layer on the canvas, press Save in Draw, then open the new file in the Library.", "The save has a route.snapshot image as a parent; reopening its canvas shows that picture, not a grey box."],
+    ["s07a-draw-refuse", "Rack: try to plug Draw \"Canvas\" into Draw \"Image layer\".", "The cable is refused."],
+    ["s07a-seq-projector", "Plug Compose \"Composite\" into Sequence \"Projector\", open Sequence, press \"Projector: rack\".", "The composite fills the screen and changes when Compose changes; tap closes it."],
+    ["s07a-loop-first", "Projector phone: plug Draw \"Canvas\" into Loop \"Projector\", connect both phones, set Next frame to \"The rack's picture\", start the loop.", "The first frame is the Draw canvas; each capture's parent in the Library is a route.snapshot image."],
+    ["s07a-loop-unplug", "In the Library, press Use in Loop on any image while Loop \"Projector\" is plugged in.", "The cable is removed and the Loop room says it starts from that Library image."],
+  ]},
+  { id: "r04-fmam", title: "FM/AM nodes", intro: "Sprint R04. Node Lab: an FM/AM node (Time) or an FM/AM Image node (Filter). No sound.", items: [
+    ["r04-fmam-value", "In Node Lab, add an FM/AM node (Time), link Value into a Drive Layer's Value, and start Live.", "The layer moves in a wobbling pattern. Switching Mode between AM, FM and Ring changes how it moves."],
+    ["r04-fmam-still", "Add an FM/AM node with Min 0 and Max 8, without Live.", "Its Value reads 4 (the middle)."],
+    ["r04-fmam-image-bright", "Link a Library Image into an FM/AM Image node (Filter), then into the Viewer.", "Dark and light bands run down the picture. Amount 0 removes them."],
+    ["r04-fmam-image-shift", "On the same node, set Effect to Shift and Direction to Across.", "The columns slide up and down in a wave, wrapping round the edges."],
+    ["r04-fmam-image-phase", "Link a Clock's Phase into the FM/AM Image node's Phase and start Live.", "The bands scroll across the picture."],
+    ["r04-fmam-mute", "Mute the FM/AM Image node.", "The picture shows unchanged."],
+  ]},
+  { id: "s11-layout", title: "Landscape layouts and Sequence slits", intro: "Sprint S11. Turn the phone sideways for the landscape items.", items: [
+    ["s11-slit-sequence", "Put three or more items with different durations on the Sequence timeline. In Slit-scan pick Frames \"Sequence\", then switch between \"One per item\" and \"By timing\".", "A picture made of slits from the timeline. The frame count goes up with \"By timing\", and longer items take up more slits."],
+    ["s11-uied-orient", "In the UI Editor, turn the phone sideways, move a panel, then turn it back.", "The toolbar says \"Landscape front\", then \"Portrait front\". The moved panel moves only in landscape. Cables are the same in both. \"Like portrait\" puts landscape back."],
+    ["s11-knob-panel", "Open the studio's back (Node Lab, Studio routing), pick a module with knobs, and tap a knob.", "The exact-value box opens over the knob panel, not as a full-screen dialog. Tapping outside the box closes it."],
+    ["s11-library-land", "Open Library in landscape, then open one image.", "Grid: the filter and sort bars are in a side panel and the grid uses the full height. Detail: the image is on the left and its details are in the side panel."],
+    ["s11-nodes-land", "Open Node Lab in landscape.", "The graph uses the full height, and the toolbar is in a side panel whose edge can be dragged."],
+    ["s11-studio-land", "Open Studio in landscape.", "The avatar, the project line and the tabs are in a rail on the left, and the tab's page fills the rest of the window."],
+  ]},
+  { id: "s07b-rack", title: "Rack: patch jacks and rack presets", intro: "Sprint S07b. Flip to the studio's back for the rack items.", items: [
+    ["s07b-patch-jacks", "Flip to the back, open the Patch tab, tap LFO 1 and patch it into Node Lab · Signal 1.", "The Patch bay's rear panel lists LFO 1, LFO 2, Touch X, Touch Y and Route 1 to 4; the cable appears under All cables, and a Module Signal node follows the LFO."],
+    ["s07b-patch-routes", "Add a route in Patch, start Live, and patch Patch bay · Route 1 into OSC out · A (OSC out on).", "OSC out sends a value from 0 to 1 that moves with the route."],
+    ["s07b-rack-preset-save", "Make two cables, open All cables, tap \"+ Save cables…\", name it, then pull one cable and tap your preset.", "It asks first, then brings both cables back; Undo brings back the one-cable rack."],
+    ["s07b-rack-preset-builtin", "Under All cables tap \"Camera chain\".", "Camera feeds Develop, Develop feeds Glitch and Glitch feeds Sequence; the chip is ticked and has no delete button."],
+    ["s07b-rack-preset-keep", "Save a rack preset, close and reopen the studio.", "Your preset is still listed before the built-in ones."],
+  ]},
+  { id: "r08-notebook", title: "Lab notebook: notes and Rerun", intro: "Sprint R08. Studio → Notebook tab.", items: [
+    ["r08-note", "Studio, Notebook: tap \"Add note\" on an entry, type a line, Save; close and reopen the app.", "The note shows under the entry and the button now says \"Edit note\"."],
+    ["r08-note-clear", "Edit note, delete all the text, Save.", "The note is gone and the button says \"Add note\" again."],
+    ["r08-rerun-draw", "Save a Draw canvas, then in Notebook tap \"Rerun\" on it.", "\"Running…\", then a message; a new top entry the same size reads \"Run 2 · first run\" with the first run's time, and the first now reads \"First run · 1 rerun\"."],
+    ["r08-rerun-glitch", "Rerun a Glitch save and open both in the Library.", "Both pictures look the same (same seed and settings)."],
+    ["r08-rerun-chain", "Tap Rerun on the rerun itself.", "The newest entry reads \"Run 3\" and names the first run's time."],
+    ["r08-no-rerun", "Look at a Sequence GIF or camera capture in Notebook.", "It has \"Add note\" but no \"Rerun\" button."],
+  ]},
+  { id: "s02-main-thread", title: "Main-thread work moved off the UI", intro: "Sprint S02. Camera, Library and Develop; watch for freezes.", items: [
+    ["s02-camera-leave", "Open Camera, wait for the preview, switch to Library and back to Camera five times quickly.", "The app never freezes or shows \"not responding\", and the preview comes back each time."],
+    ["s02-camera-switch", "In Camera, tap between the Back and Front camera chips several times.", "Each camera's preview appears; no \"Camera error\" message."],
+    ["s02-camera-fast-leave", "Open Camera and leave for another room within half a second, five times; then open Camera and wait.", "The preview starts normally and no \"Camera error\" or \"camera in use\" message appears."],
+    ["s02-library-scroll", "In Library with many photos, fling the grid down to the bottom and back up.", "Scrolling stays smooth; tiles you have seen show at once on the way back."],
+    ["s02-grid-size", "In Library, tap \"+\" until the grid shows 2 across, then \"−\" back to 3.", "Tiles reload at the new size and none shows another image's picture."],
+    ["s02-detail-chips", "In Library, open an image with parents and children, then tap a Parents or Children chip.", "The new image appears; the previous one never shows in its place."],
+    ["s02-ab-flicker", "Open a Develop result in Library, turn on \"A/B vs parent\" at 30 ms for 20 seconds, then go back.", "The picture flips steadily without blank frames, and the app stays responsive."],
+    ["s02-cube-import", "In Develop → LUT, import a 33-point .cube file, then add a Compose layer that uses that look.", "The screen stays responsive during the import; the look appears in Develop and on the Compose layer."],
+    ["s02-presets", "In Develop → Presets, tap \"Save current look as preset\" three times quickly, leave Develop and come back.", "All three presets are listed."],
+  ]},
+  { id: "r05-physics", title: "Physics room with dyn4j", intro: "Sprint R05. Open Physics from the rooms list.", items: [
+    ["r05-shapes", "In Draw, draw a closed circle, a closed square, an open line across the lower half and add a picture; open Physics and press \"Take from Draw\".", "Chips read Ball, Box, Line (Fixed) and Box; outlines sit on each shape."],
+    ["r05-run", "Press Run with gravity on Down.", "The ball and boxes fall, land on the line or the bottom edge and settle; the readout counts hits."],
+    ["r05-tilt", "Pick Tilt, press Run, tip the phone left and right, then lay it flat.", "Bodies slide towards the low edge; lying flat they stay where they are."],
+    ["r05-trigger", "On the Studio back, patch Physics Hit into Node Lab Signal 1, then run.", "The input jumps to 1 for an instant on each hit and back to 0; a resting body does not keep firing."],
+    ["r05-animate", "Turn on Record, run for 2 seconds, press To Animate; then press Bake to Animate.", "Animate opens with the recorded frames after the current one, then with the baked frames; one Undo removes each batch."],
+    ["r05-background", "While Run is on, switch to another app for 10 seconds and come back.", "Bodies are where they were when you left, then go on."],
+    ["r05-bakecap", "Set Frame rate to 60 and Bake length to 20 s.", "The note says the bake stops early; the button reads \"Bake 600 frames to Animate\"; after baking the message says it stopped early."],
+    ["r05-recordfull", "Record while running at 60 fps for over 10 s.", "The chip turns to \"Record (600, full)\" and switches off, and one message says Record is full."],
+  ]},
+  { id: "s01-lifecycle", title: "Nothing runs while the studio is closed", intro: "Sprint S01. Use a second device or the battery screen.", items: [
+    ["s01-sensors-off", "Turn on the Sensors unit with the microphone allowed, then press Home for a minute.", "The microphone indicator goes off and no sensor jacks update; back in the studio the readings move again."],
+    ["s01-osc-closed", "Turn on OSC in, press Home, then send OSC to port 9000 from a laptop.", "Nothing arrives while the studio is away; after you come back, the \"last\" line updates again."],
+    ["s01-loop-relink", "Link the two phones in Loop, press Home on one, then open the studio again.", "The link drops and says it was closed while off screen; on return it waits or connects again by itself."],
+    ["s01-midi-release", "Turn on MIDI in with a controller attached, press Home, then come back.", "The device shows as closed while away and opens again on return."],
+    ["s01-battery", "Leave the studio open in Patch live with sensors on, lock the screen for 30 minutes.", "Battery settings show almost no studio CPU time and no drain while the screen was off."],
+  ]},
+  { id: "r09-glitch-sort", title: "Glitch: pixel sort and colours from a picture", intro: "Sprint R09. Open Glitch from the rooms list.", items: [
+    ["r09-sort-knob", "Set Pixel sort to Off, then turn \"Sort angle\" on the Glitch rack panel.", "Pixel sort switches to Angle and the lines follow the knob."],
+    ["r09-colour-first", "In Glitch, tap \"Another image…\" and pick a strongly coloured Library image.", "The first image you see already has the new colours, with no flash of the old ones."],
+    ["r09-rack-colour", "Patch glitch.image into another module, pick a colour image, then turn a Glitch knob several times.", "The routed image keeps the new colours and updates as quickly as it does without a colour image."],
+    ["r09-rerun-colour", "Save a glitch that uses \"Colours from\", then run that Notebook entry again.", "The rerun has the same colours as the first save."],
+  ]},
+  { id: "bug", title: "Unresponsive controls",intro: "Your report from 2026-10-15. Fixed so far: FFT brushes, Glitch crashes on big photos, Grab from Draw, Library losing its place.", items: [
+    ["bug-sweep", "In each room, try every button, chip, slider and field once.", "Each reacts at once. Note any that do nothing or lag."],
+    ["bug-num", "Tap the number next to any slider and type an exact value; try − / + / −− / ++.", "The slider jumps to the value; nudges move it by small steps."],
+    ["bug-crash", "If anything crashes, note the time here.", "Claude reads the phone log when it is connected."],
+  ]},
+  { id: "lib", title: "Library", items: [
+    ["lib-multi", "Long-press an image, tap more, send them to Draw / Animate / Sequence / Patch.", "All arrive, in the order picked."],
+    ["lib-usein", "Use in → each room: Draw, Animate, Sequence, Develop, FFT, Glitch, Camera, Loop, Patch, Compose, routing-nodes.", "The image arrives there; Undo in that room removes it."],
+    ["lib-recipe", "Reopen recipe on a saved Draw, Animate, Develop, FFT, Glitch, Compose and routing-nodes result.", "How it was made comes back."],
+    ["lib-tags", "Add a tag, filter by it, remove it.", "The filter shows only tagged images."],
+    ["lib-delete", "Delete an image without children, then try one with children.", "The first goes; the second is refused."],
+    ["lib-compare", "Compare with another image; check parents and ancestry on the detail page.", "A/B flicker works; the parent chain is right."],
+  ]},
+  { id: "draw", title: "Draw", items: [
+    ["draw-image", "+ Image: place a Library image; move, twist, pinch, drag a corner; opacity, blend, Fit / Fill / 1:1.", "It behaves like any layer and stretches along its own axes."],
+    ["draw-gen", "Ellipse hatch, the Sine profile, + Sine pair.", "Each draws, and its settings change it."],
+    ["draw-stretch", "Select a stroke and drag its corner handle.", "It stretches unevenly along its own axes."],
+    ["draw-layers", "New canvas, layer Up / Down, Undo after each.", "Each step undoes."],
+    ["draw-save", "Save.", "In Library and in Gallery (Pictures/Studio)."],
+    ["s03-draw-speed", "On a canvas with about 200 strokes, draw a new stroke slowly.", "The stroke follows the finger smoothly and the strokes underneath look the same as before."],
+    ["s03-slider-edit", "Pick a grating under many strokes and drag its Spacing slider.", "The grating changes live and the strokes above it still show on top."],
+    ["s03-subtract", "Set a layer's blend to Subtract (if offered), then draw a stroke and undo.", "The picture matches what it looked like before; nothing is left behind after undo."],
+    ["s03-image-load", "Add a Library image, leave Draw and come back.", "The grey box turns into the image without touching the canvas."],
+    ["s03-rotate", "Rotate the phone or resize the split while in Draw.", "The canvas redraws at the new size with nothing stretched or stale."],
+  ]},
+  { id: "anim", title: "Animate", items: [
+    ["anim-libframes", "+ Library frames: pick images.", "They become frames in that order."],
+    ["anim-basics", "Grab / Replace / Edit in Draw, hold counts, onion skin, Play at different fps.", "Playback matches the settings."],
+    ["anim-recdrag", "Rec drag while dragging a layer; the step helper with N frames.", "Frames are captured as you drag; N shifted frames are added."],
+    ["anim-clear", "Clear all, then Undo.", "All frames go, then all come back."],
+    ["anim-barrier", "Barrier view: drag the slit sideways, then Save.", "Interleaved image and barrier appear in Library."],
+  ]},
+  { id: "seq", title: "Sequence + projector", items: [
+    ["seq-frame", "Frame shapes (Screen, First item, 1:1, 4:3, 3:4, 16:9, 9:16); per item Fit / Fill / 1:1 and Turn 90°.", "Preview and projector match; the projector never crops."],
+    ["seq-preview", "Play the preview after editing items.", "The right frames, never black."],
+    ["seq-proj", "Projector on the S9+, and at 60 / 90 Hz on the S21.", "The closing report shows few or no dropped vsyncs. (120 Hz on the S21 already works.)"],
+    ["seq-export", "Export GIF and MP4.", "Both in Library and in Gallery / Movies."],
+  ]},
+  { id: "bridge", title: "Bridge", items: [
+    ["br-gallery", "Send to Samsung Gallery editor → edit → save → inbox → import.", "The import is a child of what was sent."],
+    ["br-notes", "The same round trip with Samsung Notes.", "Same result."],
+    ["br-share", "Share an image into the studio from another app.", "Imported; a child of the send if you just sent to that app."],
+    ["br-rec", "Screen recording: approve the consent yourself, record, stop.", "In Library and Movies/Studio."],
+  ]},
+  { id: "cam", title: "Camera", items: [
+    ["cam-manual", "Shutter, ISO, focus, white balance, torch; on the S9+ aperture f/1.5 vs f/2.4.", "Each visibly changes the picture."],
+    ["cam-burst", "Burst with additive, mean and interlace stacking.", "Each result looks like its mode."],
+    ["cam-raw", "RAW on.", "A DNG is saved as a child of the JPEG."],
+    ["cam-overlay", "Preview overlay: grating, Draw canvas, barrier, Library image.", "Shown while framing, and burnt into the photo when 'Burn into capture' is on (see the Camera checks of 2026-10-21)."],
+    ["cam-restore", "Library → Open in Camera on a capture.", "The settings come back."],
+    ["cam-fv5", "FV-5 button.", "FV-5 opens; its photos reach the Bridge inbox."],
+  ]},
+  { id: "loop", title: "Loop (two phones)", items: [
+    ["loop-sync", "Link the phones; run synced mode.", "Projector shows a frame, camera captures it, the capture comes back as the next frame."],
+    ["loop-free", "Free-run mode.", "Both run on their own timers."],
+    ["loop-torch", "Torch strobe on the camera phone.", "The torch flickers during captures."],
+    ["loop-seq", "Sequence as the source.", "Next frame = next Sequence item."],
+    ["loop-q", "On 2026-10-14 at 16:30 a second Loop run started by itself. Was that you?", "Answer in the note."],
+  ]},
+  { id: "patch", title: "Patch bay", items: [
+    ["patch-sensors", "Routes from rotation, accelerometer, magnetometer, light, proximity.", "The Draw layer moves with the phone."],
+    ["patch-mic", "Microphone level (grant the permission yourself).", "Sound moves the layer."],
+    ["patch-touch", "Touch pad: drag on the live canvas.", "The routed value follows your finger."],
+    ["patch-remote", "Sensors from the other phone while linked (Patch live on both).", "One phone moves the other's layer."],
+    ["patch-rec", "Record to Animate while live; Undo in Animate, then Undo in Draw.", "One Undo removes the take; one takes back the session."],
+    ["patch-graph", "Open as graph, then ▶ Live in routing-nodes; Undo there.", "Same motion as the Patch bay; Undo brings the old graph back."],
+  ]},
+  { id: "dev", title: "Develop", items: [
+    ["dev-curve", "Tone curve: drag a point, tap to add, long-press to remove; Input / Output fields.", "The curve and the image follow."],
+    ["dev-light", "Exposure, temperature / tint, levels, hue mixer bands.", "Each changes the image smoothly."],
+    ["dev-masks", "Masks: lasso, brush, spot colour, with feather and invert.", "The adjustment stays inside the mask."],
+    ["dev-cube", "Import a .cube with the amount slider; Export look as .cube.", "Import applies; the export opens elsewhere."],
+    ["dev-style", "Style mix with another image (e.g. a Samsung AI Style result).", "Blends in by the amount."],
+    ["dev-presets", "Save and apply a preset; hold Before; Save full size.", "The look comes back; the save is full resolution."],
+  ]},
+  { id: "fft", title: "FFT lab", items: [
+    ["fft-brush", "Brushes (erase, keep, boost) on the spectrum.", "Rings show where you painted; the result changes."],
+    ["fft-filters", "Low / high / band-pass at 256, 512, 1024; Phase from another image.", "Each changes the result as named."],
+    ["fft-save", "Save.", "A child of both images."],
+  ]},
+  { id: "glitch", title: "Glitch lab", items: [
+    ["gl-params", "Bytes per pixel, width, stride, offset, channel order, chroma shift, fills.", "Each misreads the image differently."],
+    ["gl-jpeg", "JPEG generations with corruption on.", "Still opens."],
+    ["gl-sweep", "Sweep wall: tap a variant.", "It becomes the current setting."],
+    ["gl-save", "Save a result, also from a 12 MP photo.", "Saved, no crash."],
+  ]},
+  { id: "comp", title: "Compose", items: [
+    ["co-doc", "New document from a layer, the screen, or typed; white, black, transparent; Save transparent.", "The PNG keeps its transparency."],
+    ["co-layers", "Layers: Library image, Draw canvas, generators, paint, text, fill, linear and radial gradient.", "Each adds and edits."],
+    ["co-blend", "Opacity, 17 blend modes, clip to layer below, blend-if (shadows, highlights, feather).", "Each changes how the layer mixes."],
+    ["co-transform", "Move / pinch / twist, exact X / Y / scale / rotation, flip, rename, raise / lower, duplicate, delete.", "All work and undo."],
+    ["co-tools", "Select, Lasso, Crop, Brush, Eraser, Mask, Eyedropper.", "Each tool does its job."],
+    ["co-sel", "Selection → mask (feathered); fill / erase the selection on a paint layer.", "Edges are soft as set."],
+    ["co-mask", "Painted masks: hide / reveal, size, softness, invert.", "Soft edges stay soft."],
+    ["co-filters", "Each layer filter: blur, sharpen, noise, invert, desaturate, posterize, threshold, FFT pass, Glitch.", "Each shows in the composite."],
+    ["co-adjust", "Develop adjustments on a layer.", "Only that layer changes."],
+    ["co-color", "Colour picker: swatches, HSV, opacity, exact values.", "The brush / fill uses it."],
+    ["co-view", "Pinch-zoom the view; tap a spot.", "The top layer there is picked."],
+    ["co-save", "Save, then Reopen recipe.", "Every image used is a parent; the stack comes back."],
+  ]},
+  { id: "nodes", title: "routing-nodes", items: [
+    ["#", "Basics"],
+    ["nd-add", "Long-press empty space; search the Add menu.", "The node appears where you pressed."],
+    ["nd-link", "Drag output → input; try a wrong type.", "It links; wrong types are refused."],
+    ["nd-pick", "Drag a linked input away and drop it elsewhere.", "The link moves."],
+    ["nd-drop", "Drop a link on a node's body.", "It joins the best input."],
+    ["nd-view", "Drag nodes, pinch, pan, double-tap empty space.", "Double-tap frames everything."],
+    ["nd-field", "Tap a number field; drag one sideways.", "Exact entry; scrubbing."],
+    ["nd-preview", "◎ on any node.", "The backdrop shows that node."],
+    ["nd-pickimg", "Library Image → Pick image….", "The picture flows through."],
+    ["nd-edit", "Mute, Collapse, Duplicate, Delete, Select all, Rename.", "Each works and undoes."],
+    ["nd-run", "▶ Run on Save to Library and Send to Compose; Reopen recipe.", "The image arrives; the graph comes back."],
+    ["nd-presets", "Load each built-in preset; save your own; delete it.", "All load; yours persists."],
+    ["#", "Node Wrangler tools"],
+    ["nw-lazy", "Lazy connect: drag from one node to another.", "They link (this was broken before)."],
+    ["nw-mix", "Lazy mix: drag between two picture nodes.", "A Mix of the two appears."],
+    ["nw-cut", "Cut links: swipe across links.", "They are cut."],
+    ["nw-reroute", "Add reroutes: swipe across links; move a dot.", "Dots appear, move, and take the link's colour."],
+    ["nw-box", "Box select.", "Nodes inside the box are selected."],
+    ["nw-align", "Align (row / column); Swap A↔B on a Mix.", "Lined up; inputs swap."],
+    ["nw-insert", "Drop a lone node onto a link.", "It goes in between."],
+    ["nw-blend", "Blend for all on several Mix nodes.", "All change at once."],
+    ["#", "Live and time nodes"],
+    ["lv-presets", "▶ Live with each Live preset.", "Moves; fps shows in the corner."],
+    ["lv-sensor", "Sensor node with the phone tilted, and with smoothing.", "Follows the tilt, smoothly."],
+    ["lv-remote", "Sensor set to Phone: Other while linked in Loop.", "The other phone drives it."],
+    ["lv-seq", "Sequence Frames + Frame at + Clock.", "Plays the Sequence items."],
+    ["lv-rec", "Record to Animate: Arm, record, Stop.", "Frames land in Animate; one Undo removes the take."],
+    ["lv-hold", "Sample & Hold with a Clock Tick.", "Value steps on each tick."],
+    ["lv-stop", "Leave the room; start Patch live while nodes are live.", "Live stops in both cases."],
+    ["#", "Frames and groups"],
+    ["fg-frame", "Frame the selection; drag its label bar; drag its corner; Rename, Colour, Remove.", "Nodes move with it; it resizes; removing keeps the nodes."],
+    ["fg-group", "Group the selection.", "A Group node with the crossing links as sockets; same result."],
+    ["fg-enter", "⇥ Enter group; link from Group Input's +; Exit; Rename group.", "A new socket appears on the Group node."],
+    ["fg-field", "Type a value on the Group node's field.", "Changes the inside."],
+    ["fg-shared", "Add a second copy from Add → Group; edit inside one.", "Both change."],
+    ["fg-ungroup", "Ungroup.", "Nodes come back; same result."],
+    ["fg-undo", "Undo after each of these.", "Each undoes."],
+  ]},
+  { id: "rack", title: "Studio routing (Node Lab → ⟲ Studio routing)", items: [
+    ["rk-flip", "Press ⟲ Studio routing in Node Lab; open each module tab on the back.", "The app turns round; the room bar runs right to left; each module shows its back."],
+    ["rk-front", "Compose's back: Layer 1 ⟵ Draw · Canvas.", "A live layer appears in Compose and follows the drawing."],
+    ["rk-cables", "All cables: drag output → input; drag a plugged input away.", "Cables hang, coloured by type; unplugging works."],
+    ["rk-knobs", "Turn knobs (drag up / down, tap for a value).", "The module's front follows."],
+    ["rk-presets", "Save a module preset, change things, recall it; Undo in the module.", "The state comes back; Undo undoes the recall."],
+    ["rk-flipback", "Flip to front from a module's back.", "You land on that module's front."],
+    ["rk-develop", "Compose · Composite → Develop · Source; Save in Develop.", "Develops live; Save files the input, then the result as its child."],
+    ["rk-loop", "Try to close a loop (Develop → Compose while Compose feeds Develop).", "Refused (greyed, “would loop”)."],
+    ["rk-camera", "Camera · Overlay ⟵ Draw · Canvas.", "The drawing shows over the camera preview."],
+    ["rk-nodes", "Node Lab: a Module In node with Draw patched into In 1.", "It follows the drawing."],
+    ["rk-keep", "Undo / Redo / Unplug all; restart the app.", "The patching is still there after a restart."],
+  ]},
+  { id: "studio", title: "Studio module", items: [
+    ["st-file", "File: New, open another, Save a copy as, Rename, Delete, Export .zip, Import .zip.", "Projects switch with their own Library and rooms; exports land in Download/Studio."],
+    ["st-prefs", "Preferences: start room, interface size, keep screen on, haptics.", "Each takes effect."],
+    ["st-theme", "Theme: try every theme, light ones too.", "Everything stays readable."],
+    ["st-profile", "Profile: name, handle, about; export a project.", "Saved; studio-profile.json is inside the .zip."],
+  ]},
+  { id: "deep", title: "Develop deep analysis", items: [
+    ["da-cycle", "Scope chip: histogram → vectorscope → 3D height → deep analysis.", "The card expands from the corner over the canvas."],
+    ["da-tools", "Probe, Line, Region, Clipping, Waveform / RGB parade, 3D; ✕ Close.", "Each reads the developed image; 3D turns, tilts and scales."],
+  ]},
+  { id: "req17", title: "Requests of 17 October", items: [
+    ["q-redo", "Redo in each room.", "Brings back what Undo took."],
+    ["q-cgroups", "Compose: hold layers to pick several; Group / Ungroup / Take out of group; hold and drag to reorder.", "Groups blend as one; order changes."],
+    ["q-dgroups", "Draw: hold object chips; Group / Ungroup; hold and drag.", "Tapping one grouped object picks the group."],
+    ["q-brush", "Paint with the brush; Straight line for brush, eraser, mask and the Draw pen.", "The stroke shows while painting; straight lines from the touch-down point."],
+    ["q-clip", "Compose selection: Copy / Cut / Paste.", "A clipped layer appears, ready to move."],
+    ["q-zoom", "Camera: pinch the preview; the Zoom slider.", "Zooms; the zoom is kept with the capture."],
+    ["q-gif", "Animate → Save GIF.", "A GIF in Library and Gallery."],
+    ["q-bright", "Sequence: Projector brightness Phone setting vs Set here.", "Only Set here changes the screen brightness."],
+    ["q-glitch", "Glitch: Correction %, Correct at 1/N, Every N gens.", "Long generation runs keep their structure."],
+    ["q-dev", "Develop: Scope; Mask tab (blending, mask layers, combine, luminance); Style strip.", "Scopes follow edits; masks combine; styles apply by amount."],
+    ["q-lib", "Library: stars, flags, labels (one and many); sort; filters; pinch grid; loupe; Compare.", "All work; marks survive a restart."],
+  ]},
+  { id: "two", title: "Two phones", intro: "Both phones need the build from 2026-10-16 22:00 (it adds a new message to the Loop link).", items: [
+    ["tp-send", "Link the phones in Loop; on one, load “Two phones: stream a live moiré to the other phone” and press ▶ Live.", "The status shows “sent N”."],
+    ["tp-recv", "On the other, load “Two phones: project what the other phone sends”.", "The backdrop shows the stream; the status shows “received N”."],
+    ["tp-proj", "Projector node → ▶ Full screen, with and without Live.", "The whole screen at full brightness; tap or Back closes."],
+    ["tp-once", "Send to Other Phone → ▶ Send once, without Live.", "A message says “Sent W×H”; the other phone shows it."],
+    ["tp-capture", "During a Loop run, From Other Phone on the projector phone.", "It shows each new capture."],
+    ["two-sync", "Each phone keeps its own project; nothing syncs. Is that fine for now?", "Answer in the note."],
+  ]},
+  { id: "n21cam", title: "Camera: overlay burnt into the photo", intro: "The overlay used to be preview only. Now it is composited into the saved photo.", items: [
+    ["n21cam-burn", "Camera → Overlay → Grating (opacity 60 %), Burn into capture on (it is by default). Take a photo and open it in the Library.", "The grating lines are in the saved photo, lined up as on the preview."],
+    ["n21cam-off", "Switch Burn into capture off and shoot again.", "The photo has no overlay. Its info (Library → capture) still names the overlay."],
+    ["n21cam-blend", "Blend → Multiply, shoot; then Difference, shoot; then Screen.", "Each photo shows the overlay blended that way. The live preview stays plain opacity (the line under the chips says so)."],
+    ["n21cam-opacity", "Opacity 20 %, then 100 %, shoot both.", "Faint and full overlay in the photos."],
+    ["n21cam-draw", "Overlay → Draw with a few layers on the Draw canvas, burn, shoot.", "The Draw layers are in the photo, in the same place as on the preview."],
+    ["n21cam-hidden", "Hide a Draw group (see the Draw checks), then shoot with Overlay → Draw.", "The hidden group is not in the photo."],
+    ["n21cam-image", "Library → Use in → Camera on an image, burn, shoot. Then look at the photo's parents in the Library.", "The image is in the photo, fitted and centred; the Library image is listed as a parent."],
+    ["n21cam-barrier", "Overlay → Barrier (from Animate), burn, shoot.", "The barrier strips are in the photo."],
+    ["n21cam-burst", "Burst of 4 with Additive stacking and a grating overlay, burn.", "The overlay is in the stacked photo once, not four times over."],
+    ["n21cam-half", "Half resolution on, burn, shoot.", "The overlay is still lined up (scaled to the smaller photo)."],
+    ["n21cam-routed", "Studio routing: cable something into Camera's Overlay jack, burn, shoot.", "That image is in the photo too."],
+    ["n21cam-restore", "Library → Open in Camera on a burnt capture.", "Overlay, blend, opacity, spacing and angle come back; the burn switch matches the capture."],
+    ["n21cam-loop", "Loop: shoot with an overlay set.", "The Loop capture has no overlay burnt in (known gap)."],
+  ]},
+  { id: "n21draw", title: "Draw: groups, history, A/B", intro: "Groups now nest and fold; the layer tabs branch downwards.", items: [
+    ["n21draw-group", "Draw: pick two layers (hold the second), Group.", "A tab ▾ Group 1 (2) appears and a row of its two layers opens below it."],
+    ["n21draw-fold", "Tap the group tab.", "It folds (▸) and its row goes; tap again to open."],
+    ["n21draw-pick", "Hold the group tab.", "Every layer in the group is picked."],
+    ["n21draw-sub", "Open the group, pick two layers inside it, Group.", "A subgroup tab appears in the group's row and its own row opens below that: the tabs branch downwards."],
+    ["n21draw-nest", "Pick two groups (hold both tabs), Group.", "Both become subgroups of a new group."],
+    ["n21draw-hide", "Pick a layer in a group, Hide group (the Groups row).", "All its layers disappear from the canvas, tabs show ◌, and a tap or lasso cannot pick them."],
+    ["n21draw-showall", "Hide all, then Show all.", "Every grouped layer hides, then shows (also layers hidden one by one inside groups)."],
+    ["n21draw-rename", "Rename on a group.", "The tab shows the new name."],
+    ["n21draw-dup", "Pick a group, Duplicate.", "The copies sit exactly on the originals (no offset), as a new group of the same shape."],
+    ["n21draw-paste", "Copy a group, Paste.", "The copy lands a little to the side, as before."],
+    ["n21draw-ungroup", "Ungroup on layers in a subgroup, then in a top-level group.", "They leave one level up; an emptied group disappears."],
+    ["n21draw-undo", "Group, hide, duplicate, then Undo three times.", "Each step is undone in turn."],
+    ["n21draw-old", "Open a project saved before this build that had groups.", "Old groups show as Group 1, Group 2 and so on, and work."],
+    ["n21draw-export", "Hide a group and Save the canvas to the Library.", "The saved picture does not show the hidden group. Animate → Grab from Draw leaves it out too."],
+    ["n21hist-draw", "Draw → History (next to Redo) after a few edits.", "A list of steps, newest first, the current one marked. Tap an older one: the canvas goes back to it. Undone steps are greyed; a new edit drops them."],
+    ["n21ab-draw", "Draw: Snap B, change the canvas, then hold the canvas still in the top right quarter.", "A | B split, A on the left. Drag sideways: the line moves. Let go: it vanishes."],
+    ["n21ab-quarters", "Hold the bottom left, bottom right and top left quarters in turn.", "Bottom left: A over B (drag up and down). Bottom right: B in full. Top left: the input view (Draw says it has none)."],
+    ["n21ab-tools", "Draw with the pen and move a layer with normal quick touches.", "Nothing changes: only a still hold (half a second) starts A/B."],
+  ]},
+  { id: "n21sld", title: "Sliders: the two-zone thumb", intro: "Every slider in the studio has a red and blue thumb now.", items: [
+    ["n21sld-blue", "Drag the bottom (blue) half of a thumb along a slider.", "The value follows across the whole range."],
+    ["n21sld-track", "Tap the bare track away from the thumb.", "The value jumps there."],
+    ["n21sld-tap", "Tap the right side of the top (red) half, then the left side.", "One fine step up, then one down. The value is tidy (0.37, not 0.3700000001)."],
+    ["n21sld-steps", "Check the step on three sliders: 0..1 (Opacity), 0..360 (an angle) and 2..80 px (Spacing).", "Roughly 0.01, 1 and 0.1 per step: a hundredth to a thousandth of the range."],
+    ["n21sld-hold", "Hold the red half for two seconds.", "After 0.4 s it repeats; each second the steps get ten times bigger."],
+    ["n21sld-drag", "Drag sideways on the red half.", "One step per 8 dp dragged, both ways."],
+    ["n21sld-whole", "A whole-number slider (Burst, Strip, Rays).", "It never lands between whole numbers."],
+    ["n21sld-end", "Step past either end.", "The value stops at the end."],
+    ["n21sld-scroll", "In a room with a scrolling panel, scroll by dragging the panel, not the thumb.", "The panel scrolls; the sliders do not move."],
+    ["n21sld-type", "Tap the number next to a slider and type an exact value.", "Works as before."],
+  ]},
+  { id: "n21cfg", title: "Studio → Config, user files, debug terminal", intro: "The Profile tab is now Config: profile, every flag, developer options, math parameters, file locations.", items: [
+    ["n21cfg-tab", "Studio → Config.", "Profile fields, Studio flags, Developer, Math parameters, Where things are saved."],
+    ["n21cfg-persist", "Change the interface size, haptics and your name. Close the app completely and open it again.", "All three are kept."],
+    ["n21cfg-migrate", "After installing this build over the old one: theme, name, project and the room you were in.", "All kept (they were moved from the old settings into the new files)."],
+    ["n21cfg-files", "Look at Where things are saved, then find user.workspace with a file manager or over USB (Android/data/dk.cbavf.studio/files/).", "user.workspace is there, readable text. user.profile is in the app's private folder (needs adb run-as)."],
+    ["n21cfg-project", "Studio → File: make a new project, switch to it, switch back.", "Both open with their own Library. The open project is remembered after a restart."],
+    ["n21cfg-export", "Export .zip, then open the zip on a computer.", "It contains user.profile (your profile and flags), not user.workspace."],
+    ["n21cfg-rec", "Bridge → screen recording, then look in the open project's folder.", "The recording is filed in the project you have open, not always in 'default'."],
+    ["n21cfg-math", "Config → Math parameters: set slider.holdMs to 1000 and try the red half.", "The hold now takes a second to start repeating. Reset to default restores 400."],
+    ["n21cfg-search", "Type 'repeat' in the Math parameters search.", "Only matching parameters remain."],
+    ["n21dbg-off", "Config → Developer → Off, Show the debug terminal.", "The terminal opens over the room, says output is off, and has no input field or keyboard."],
+    ["n21dbg-levels", "Level 1, then 2, then 3: change room, take a photo, use a gesture.", "Level 1 shows errors only; 2 adds room changes, captures and gestures; 3 adds the camera's overlay line."],
+    ["n21dbg-clear", "Clear, then Close.", "The lines go; Close hides the terminal; the level stays."],
+    ["n21dbg-error", "Open Camera with camera access off in quick settings.", "At level 1 an error line appears (red)."],
+  ]},
+  { id: "n21ch", title: "Develop: channel mixer, and the 3D tool's channels", intro: "RGBA, CMYK and Lab.", items: [
+    ["n21ch-tab", "Develop → Mixer → Channels.", "RGBA, CMYK and Lab chips, a gain and an offset slider for each channel. Hue bands is still there."],
+    ["n21ch-rgb", "RGBA: set R gain to 0 on a colour photo.", "The red is gone from the picture."],
+    ["n21ch-cmyk", "CMYK: K offset up, then C gain down.", "The picture darkens, then loses cyan."],
+    ["n21ch-lab", "Lab: L gain to 1.5, then a offset up.", "Brighter, then more red-magenta."],
+    ["n21ch-switch", "Change colour space.", "The settings start over (the channels mean something else)."],
+    ["n21ch-reset", "Reset.", "Back to neutral; the summary no longer says 'channels'."],
+    ["n21ch-save", "Save a Develop result with a channel mix, then Library → Open in Develop.", "The mix comes back."],
+    ["n21ch-preset", "Save the look as a preset, load it on another image.", "The channel mix is part of the look."],
+    ["n21ch-3d", "Develop → scope chip until Deep analysis → 3D. Pick Lab → L, then a, then b.", "The height map changes with each; Luma is the old brightness view."],
+    ["n21ch-3d-red", "3D → RGBA → R on a photo with a red object.", "The red object stands highest."],
+    ["n21ch-3d-cmyk", "3D → CMYK → K.", "Dark areas stand highest."],
+  ]},
+  { id: "n21ui", title: "UI Editor", intro: "The whole UI on one canvas. Front is the layout, back is the jack routing.", items: [
+    ["n21ui-open", "Room bar → UI Editor.", "Panels for every module, each with its controls (sliders, toggles, buttons)."],
+    ["n21ui-view", "Pinch and drag the empty canvas. Fit.", "Zoom and pan; Fit shows all of it."],
+    ["n21ui-move", "Drag a control; drag a panel's header; drag a control's bottom right corner.", "Control moves (snapped), panel moves with its controls, control resizes."],
+    ["n21ui-undo", "Undo and Redo after moving.", "Each move is one step."],
+    ["n21ui-flip", "⟲ Back.", "The canvas turns over (narrows and widens): the same layout mirrored left to right, every control now a jack."],
+    ["n21ui-mirror", "Compare a control's place on the front with its jack on the back.", "Exactly mirrored across the canvas."],
+    ["n21ui-cable", "On the back, drag from one jack to another, on any two modules.", "A cable follows your finger and stays when you let go on a jack."],
+    ["n21ui-dup", "Drag a second cable between the same two jacks; and from a jack to itself.", "Refused (no duplicate, no self)."],
+    ["n21ui-unplug", "Tap a jack, then Unplug.", "Its cables go."],
+    ["n21ui-persist", "Move some controls and patch cables, close the app, open the UI Editor again.", "Layout and cables are as you left them."],
+    ["n21ui-draw", "Select a Grating, then a Burst in Draw, then look in the UI Editor.", "Both layer types' knobs are there (remembered)."],
+    ["n21ui-nodrive", "Patch a cable and use the studio.", "Nothing changes in the rooms (cables are not wired to the controls yet)."],
+  ]},
+  { id: "n21plg", title: "Plugins and the Module Forge", intro: "Data only: a module's face as a .studiomodule file.", items: [
+    ["n21plg-list", "Studio → Plugins.", "'RGB parade' listed as built in, with a switch. 'No installed plugins yet.'"],
+    ["n21plg-make", "Module Forge: name 'Test pad', kind Controller, add a slider 'X', a toggle 'Hold' and a button 'Go'. Save and switch on.", "A toast says so."],
+    ["n21plg-ui", "Open the UI Editor.", "A 'Test pad' panel with the three controls; on the back they are jacks."],
+    ["n21plg-off", "Studio → Plugins → switch Test pad off.", "Its panel is gone from the UI Editor."],
+    ["n21plg-export", "Export .studiomodule (in the Forge or in Plugins).", "A file called test-pad.studiomodule is in Pictures/Studio."],
+    ["n21plg-install", "Remove Test pad, then Install .studiomodule… and pick that file.", "It is back in the list; switch it on."],
+    ["n21plg-bad", "Install something that is not a plugin (a photo, or a zip of other files).", "'That is not a plugin file'."],
+    ["n21plg-name", "Forge with an empty name.", "The save and export buttons are off."],
+  ]},
+  { id: "n21ab", title: "A/B compare in Develop, and the rack", items: [
+    ["n21ab-dev", "Develop: Snap B on one look, change the look, hold the top right quarter of the image.", "Vertical split, developed (A) on the left, B on the right."],
+    ["n21ab-input", "Hold the top left quarter.", "The source image, labelled 'Library image' (or 'routed source')."],
+    ["n21ab-rack", "Studio routing: an 'A/B compare' unit with jacks A and B. Cable an image into B.", "Holding the canvas then shows that image as B, instead of the snapshot."],
+    ["n21ab-two", "Config → A/B compare: hold with two fingers; then hold one finger.", "Now it takes two fingers to start; one finger does nothing special."],
+    ["n21ab-hold", "Develop: the old 'Hold: before' button.", "Still works."],
+    ["n21ab-none", "Hold with no B at all.", "'No B yet: Snap B, or patch a cable into B'."],
+  ]},
+  { id: "n21ges", title: "Gestures and History in every room", items: [
+    ["n21ges-undo", "Two-finger tap in Compose, Develop, Draw, Nodes, FFT.", "Undo in that room."],
+    ["n21ges-redo", "Three-finger tap.", "Redo."],
+    ["n21ges-room", "Three-finger swipe left, then right.", "Next room, then back."],
+    ["n21ges-sheet", "Four-finger tap.", "A list of the gestures."],
+    ["n21ges-edge", "Swipe in from the right edge in Compose, FFT, Glitch, Node Lab, the UI Editor.", "That room's History list; tap a step to jump."],
+    ["n21ges-none", "The same swipe in Animate, Sequence or Develop.", "A message that the room has no history list yet (known gap)."],
+    ["n21ges-pinch", "Pinch and twist in Draw.", "Works as before; it does not undo."],
+    ["n21ges-sheet2", "Tap one finger on everything.", "Nothing new happens: one-finger touches are never taken."],
+  ]},
+  { id: "n21slit", title: "Slit-scan", intro: "Every slit taken from a different Animate frame.", items: [
+    ["n21slit-none", "Slit-scan room with fewer than two Animate frames.", "A message to make frames in Animate first."],
+    ["n21slit-v", "With 4+ frames: Vertical slits, width 3 px, Time None.", "A picture of interleaved strips, like the barrier view."],
+    ["n21slit-h", "Horizontal.", "The same, in rows."],
+    ["n21slit-w", "Slit width 1, then 20.", "Fine, then coarse strips."],
+    ["n21slit-time", "Time → Ramp, Wave, Random (with Strength and Seed).", "The picture bends through time; the same settings give the same picture."],
+    ["n21slit-save", "Save to Library.", "A new image in the Library, opens in other rooms."],
+    ["n21slit-size", "720, 1080 px.", "Bigger picture, slower."],
+  ]},
+  { id: "n21sns", title: "Sensors in Node Lab", items: [
+    ["n21sns-out", "Add a Sensor node.", "Five outputs: Value, Raw, High-pass, Change, Seed."],
+    ["n21sns-hp", "Live, Source = Accel X: hold the phone still, then shake it.", "High-pass sits near 0 and swings when shaken; Change spikes."],
+    ["n21sns-seed", "Seed into a Glitch node's seed (or any number input), tilt the phone.", "The seed changes as the readings change."],
+    ["n21sns-old", "Open a graph saved before this build that has a Sensor node.", "It loads, links to Value and Raw intact."],
+  ]},
+  { id: "n21page", title: "This page", intro: "Feedback fields.", items: [
+    ["n21page-note", "Type in a note under any check.", "It stays (this browser, or your account on claude.ai) and the ✎ button gets a dot."],
+    ["n21page-room", "Type a room feedback and the overall feedback.", "Saved the same way."],
+    ["n21page-log", "Changelog tab: type feedback on an entry.", "Saved."],
+    ["n21page-copy", "Copy all feedback.", "Your broken checks, notes and feedback are on the clipboard as text."],
+  ]},
+  { id: "n21fft", title: "FFT: what changed after your first report", intro: "The controls worked on a fresh start when I tried them without touching your screen; these changes make slow recalculation visible and measurable.", items: [
+    ["n21fft-update", "FFT: pick LowPass, then drag the Radius slider.", "The top line says ' · updating…' while the picture is being recalculated, then the spectrum changes (a LowPass blacks out the outer ring)."],
+    ["n21fft-paint", "Tap and drag on the spectrum with the Erase brush.", "Red rings appear (with their mirror through the centre), Undo lights up, and the spectrum darkens where you painted."],
+    ["n21fft-result", "Press Result, then Magnitude again.", "Result shows the filtered image; tapping it goes back to painting on the spectrum."],
+    ["n21fft-save", "Save, then Library → Reopen recipe on that FFT save.", "FFT opens on the Result view, showing the saved picture, with the same filter and paint still there."],
+    ["n21fft-phase", "FFT: Phase from \u2192 Another image\u2026, pick one, Save. Open the Library, find that save, Reopen recipe.", "FFT opens on Result with the same source, the same phase image ('phase swap' in the top line), filter and paint. Not just the original picture."],
+    ["n21fft-slow", "If it feels slow or stuck: Studio → Config → Developer → level 3, Show the debug terminal, then paint once.", "A line 'fft: rendered 512x512 … in N ms' shows how long each recalculation took. Note N (and the size) in the note."],
+  ]},
+  { id: "n21live", title: "Live cables into FFT, Develop and Glitch", intro: "Found on your phone: a saved cable Compose → FFT made FFT show the Compose composite and ignore every image you picked or loaded, with nothing on screen saying so.", items: [
+    ["n21live-see", "With a cable into FFT, Develop or Glitch (Studio routing): open that room.", "The top line says 'Live from Compose · Composite' (or whatever feeds it) and an 'Unplug · live from …' button sits beside Image…."],
+    ["n21live-unplug", "Press Unplug.", "The cable goes (also in Studio routing) and the room shows the image you picked, or asks you to pick one."],
+    ["n21live-pick", "With a cable plugged in, pick an image with Image…, or Library → Use in → FFT / Develop / Glitch.", "The cable is unplugged for you, and the picked image is what you see."],
+    ["n21live-reopen", "With a cable plugged in, Library → Reopen recipe on an FFT, Glitch or Develop save.", "The saved edit opens (the cable is unplugged), not whatever the cable carries."],
+  ]},
+];
+
+// Changelog, newest first. Times are Danish local time.
+// PLAN-DATA-START
+const PLAN = [
+ {
+  "phase": "Now (you)",
+  "status": "active",
+  "title": "Short test sessions on the phones",
+  "items": [
+   "Keep sessions short and close the app when done, so nothing runs in the background.",
+   "Mark checks on the Test checklist. Badges there show what the phones' feedback says you already did.",
+   "The S21 'not reacting' report, with logcat from the S21, when you have it."
+  ]
+ },
+ {
+  "phase": "Sprint (scheduled workers)",
+  "status": "next",
+  "title": "Open build items, then the roadmap",
+  "items": [
+   "A coordinator runs every hour on the home PC (task MoireStudio-Sprint), hands items to builder and reviewer agents in their own git worktrees, merges into the sprint branch, runs all tests, and updates this page.",
+   "When the Claude usage limit is reached it stops, and a resume task is set for the reset time.",
+   "Its queue is below (docs/SPRINT.md); its run reports are in docs/SPRINT-REPORT.md."
+  ]
+ },
+ {
+  "phase": "Your decisions",
+  "status": "decide",
+  "title": "Workers skip anything that needs these",
+  "items": [
+   "D1 Scripting language(s) for the IDE.",
+   "D2 Sound: does the studio become a DAW too?",
+   "D3 Vocabulary theme names, and where 'Afterpilot' fits.",
+   "D4 Feedback before inviting testers: the first-run question, and who may read reports.",
+   "D6 Merge sprint into main and put the repo on GitHub (lets cloud workers help)."
+  ]
+ }
+];
+const PENDING = [
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "R06: the 3D room keeps no scene across restarts and has no undo or routed inputs; faces behind the camera are skipped, not clipped; depth order is per face; scaled meshes are rebuilt on every redraw (cache them); the Save SVG button writes to Download/Studio (drop it if Library-only is wanted); tools/feedback-server/server.py has \"3D\" in its room list, which needs the same change on the Pi at the next deploy."
+ },
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "S17: tested over loopback only; not yet sent between two real phones. Left: no Save all before a project is packed; one picture at a time; no progress in the Library. Review point: IncomingFiles.end() uses check(renameTo), which throws if the rename fails (the caller is inside withContext(Dispatchers.IO); check how that error reaches the UI)."
+ },
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "S18: new sub-folders created while the app is open are not picked up until the next resume; the Pictures watcher is not recursive; reviewer point: the RunGate hook is redundant (the collectLatest already restarts the flow on resume) but harmless."
+ },
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "S15b: clone/heal only works on paint layers (photo layers need the source bitmap, not the paint sheet); heal is colour-shift only (no Poisson blending); the clone offset stays locked for the whole session; a non-paint layer selected via undo or add can still have Clone/Heal active briefly."
+ },
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "S15: imported .ttf fonts; the .cube file is read on first use in the Compose render path (ComposeRender.kt), to move off the main thread under S02."
+ },
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "S08: plugin behaviours are a list editor only (no Node Lab canvas); plugin outputs are not Rack jacks; a shared file still needs Studio → Plugins → Install; built-in plugins have no Share button."
+ },
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "S08 review points: PluginBehaviourTest covers image and save nodes but no sensor node; PluginRoom.kt:82 takes the whole pause as dt on resume (smoothing jumps once), reset lastT on resume or cap dt; PluginStore.kt share cache is never cleaned."
+ },
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "S04 review points (APPROVE, 2026-10-26): a per-frame (0..2).map in the Switch node (Evaluate.kt:214); the Touch Pad's Down is 0 inside a group (say so in the help); a muted Touch Pad may pass nothing; setProps on every pointer move."
+ },
+ {
+  "section": "Sprint open items (2026-10-26)",
+  "state": "open",
+  "text": "Test-phone model strings are in two test files (FeedbackTest.kt, LinkTest.kt): the rule is no Samsung or test-phone names in app/src, so move them to a neutral string."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "Camera: overlay burnt into the photo with a blend mode (Loop captures are not burnt)."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "Draw: nested, foldable groups with rows of tabs that branch downwards; show/hide all; duplicate in place."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "History lists (Draw, Compose, FFT, Glitch, Node Lab, UI Editor) and the gestures (two/three/four-finger taps, three-finger swipe, right-edge swipe)."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "The two-zone slider thumb on every slider."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "Studio → Config (user.profile, user.workspace, flags, developer options, math parameters), debug terminal."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "Develop channel mixer (RGBA, CMYK, Lab) and the 3D analysis channels."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "UI Editor (front layout, back jack routing), Plugins tab and Module Forge."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "A/B compare in Draw and Develop, with an A/B unit on the rack."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "Slit-scan room (from Animate frames), sensor node outputs (High-pass, Change, Seed)."
+ },
+ {
+  "section": "Built 2026-10-21, not tried on a phone yet",
+  "state": "open",
+  "text": "Checklist page: note fields everywhere, room and overall feedback, copy all."
+ },
+ {
+  "section": "Added 2026-10-23 (plan addendum in PLAN-pre-pilot.md; do these before building more)",
+  "state": "done",
+  "text": "E. Phone-agnostic (2026-10-23): no Samsung or test-phone names in app/src; Bridge photo editor and share go through Android's chooser, the gallery opens via the gallery category; installed on the S9+, launches, no crash. Left: a user-editable favourites list in user.profile, and memory limits from ActivityManager.memoryClass (the 2048 px glitch cap is still a constant)."
+ },
+ {
+  "section": "Added 2026-10-23 (plan addendum in PLAN-pre-pilot.md; do these before building more)",
+  "state": "done",
+  "text": "D. App icon (2026-10-23): art inside the safe zone (14 % inset) over a blurred copy; seen only as a desktop preview, not yet on a launcher."
+ },
+ {
+  "section": "Added 2026-10-23 (plan addendum in PLAN-pre-pilot.md; do these before building more)",
+  "state": "done",
+  "text": "B. Subtract and reverse-subtract blend (built 2026-10-23; on the S9+ the two chips are in Compose's Mode row and Subtract changed the picture, not compared pixel by pixel): done on the CPU in blend/SubtractMath.kt (no shader needed) for Compose layers, the camera overlay burn-in and the Node Lab Mix node. Draw does not offer it: Draw paints vector objects straight onto a canvas, which cannot subtract. A Draw-layer version needs a bitmap pass; open item."
+ },
+ {
+  "section": "Added 2026-10-23 (plan addendum in PLAN-pre-pilot.md; do these before building more)",
+  "state": "done",
+  "text": "C. Layout (built 2026-10-23, seen on the S9+ in Compose): ui/layout/RoomLayout.kt. Landscape puts the controls in a scrolling side panel (default 420 dp, 280 to 560 dp, at most 60 % of the width), with a draggable edge whose width is kept in user.workspace (panelWidthDp). Portrait keeps the panel under the picture, at most 640 dp wide. The exact-value box opens inside the panel. In Draw, Compose, Develop, FFT, Glitch, Animate, Sequence, Camera, Loop, Patch and Slit-scan; all eleven opened in landscape on the S9+ without a crash (screenshots looked right; not every control was driven). Left: Library, Bridge, Node Lab, Studio, UI Editor and Forge keep their own layouts; a separate layout per orientation in the UI Editor; the Knob dialogs still use a full dialog."
+ },
+ {
+  "section": "Added 2026-10-23 (plan addendum in PLAN-pre-pilot.md; do these before building more)",
+  "state": "open",
+  "text": "A. Gates and envelopes, half done (2026-10-23): built and unit-tested: the Gate socket (cyan), and the Node Lab nodes Gate Switch, Trigger to Gate, Gate to Trigger, Gate Logic, Gate Delay, Gate Divide, Gate Chance and Envelope (ADSR with curves, from math/Envelope.kt); the gate maths in math/Gate.kt came from the local model (13 of 14 tests on the first try; the delay's history trim was fixed by hand). On the S9+ the nodes appear in Node Lab's Add menu and a Gate Switch can be added; wiring and a live run were not done. The editable envelope graph is built (Node Lab: select an Envelope node, \"Envelope…\"; a control kind in the UI Editor and Forge), unit-tested, seen on the S9+ (dragging a handle updates the node). \"Add envelope\" is built too (long-press a slider's name; the Gate button or a clock is the trigger; a sensor threshold waits for the sensor bus), not yet seen on the phone. Gate jacks are built too (Value, Trigger and Gate jack types, the Studio gates on the Studio's back, Node Lab Signal inputs and the Module Signal node, typed ports in the UI Editor), not yet seen on the phone. Left: nothing in this item but the phone checks."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "done",
+  "text": "(done 2026-10-24 by the user) sudo tailscale funnel --bg --https=8443 http://127.0.0.1:8760 (sudo asks for a password, so it was not done remotely). Until then reports queue on the phone."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "done",
+  "text": "Opt-in switch and levels (Off, Basic, Full) in Studio → Config, first-run question, \"See what would be sent\", note, delete my data. Seen on the S9+ against a test server: session report, forced crash, digest."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "done",
+  "text": "Collector on deb-server-1 (~/MoireFeedback, user service moire-feedback, 127.0.0.1:8760); nightly job pulls docs/FEEDBACK-DIGEST.md."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "open",
+  "text": "Not tried: the HTTPS address, \"Delete my data\" and \"Write a note\" on a phone, Wi-Fi-only on mobile data, the first-run question on the S21."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "open",
+  "text": "Decide before inviting testers: whether the first-run question should show for pilot users (it does now), and who may read the reports (only the Pi's owner, over ssh)."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "done",
+  "text": "Checklist tests done in daily use (2026-10-24): tap probe, catalog (82 of 260 tests; 56 strong, 26 weak), server.py evidence, badges on the checklist page. Seen on the S9+ for two tests."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "open",
+  "text": "Catalog quality: review tools/usecases/REVIEW.md; add hand-made entries in overrides.json for tests whose generated labels are loose; gestures, visual results and slider values cannot be detected. S16 (2026-10-25): 15 hand-made entries added (17 in all), checked against the source; the digest lists rooms never opened, buttons never tapped and sliders never moved. About 60 loose tests remain, and the digest is not yet run on the Pi."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "done",
+  "text": "(fixed 2026-10-24: \"Use Tailscale DNS settings\" off on the phone; tailnet names now need IP addresses there) S9+ could not resolve host names over its Tailscale connection (reports queue and retry); check the Tailscale app's DNS setting on the phone. Not an issue for testers outside the tailnet."
+ },
+ {
+  "section": "Feedback diagnostics (built 2026-10-24; see [FEEDBACK.md](FEEDBACK.md))",
+  "state": "open",
+  "text": "Later: sensor-free \"feature never used\" lists, a crash symbol map (builds are not minified, so stack traces read directly)."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "UI Editor cables now drive the real controls of the module backs (2026-10-23, not yet seen on the phone). Decision: the layout stays an editor-only arrangement; rooms keep their own (bounded) layout and do not draw themselves from it."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Channels (2026-10-23): Split and Merge nodes, the Channel splitter on the rack, the three-channel overlay in 3D; built and unit-tested, surfaces seen on the S9+, live chain not yet. Left: per-element channel setups (queue item Q5b)."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Moiré fringe predictor on screen in Draw (2026-10-23, seen on the S9+). Camera: not applicable, see QUEUE Q8."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Command palette in the notification shade and a Quick Settings tile (2026-10-23; the notification and its room jump seen on the S9+; typing into \"Go to…\" and the tile not driven). Android Device Controls (the hub) are not built."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "A/B in Compose, FFT, Glitch and Animate (2026-10-23; the hold gesture is not yet driven on the phone). Camera is left out: its preview cannot be blended."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "History lists for Animate, Sequence and Develop (2026-10-23; generic labels, see QUEUE Q7)."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Sensor bus with record and replay, sensor jacks on the rack, and a sensor seed in Glitch (2026-10-23; seen on the S9+ up to a 7.2 s recording; the seed effect not yet driven). FFT has no seed, so none there. A sensor threshold as an envelope trigger is built (S10, 2026-10-25; unit-tested, not yet on a phone). Its background pause was a stopgap; S01 (2026-10-26) now pauses the sensors and mic through the one run gate."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Slit-scan from Library images (a camera burst) and a routed stream (2026-10-23; Library seen on the S9+, stream not driven). A Sequence source is not done. Barrier mode still shares code with Animate's interleave."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "partial",
+  "text": "Plugins: the Plugins room, plugin controls as module backs for UI Editor cables, and Loop role and host in user.profile are built (2026-10-23)."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "open",
+  "text": "Plugins, still open: node-graph behaviour behind a plugin's controls; sharing a plugin over Bridge or Loop; the RGB parade as a real scope plugin."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Math parameters (2026-10-23): the slider timings plus sensor, envelope, gate, layout, A/B and fringe parameters are wired. Other formulas (blend, filters, grating maths) keep their numbers inside the functions."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "open",
+  "text": "\"Copy as script\" flag has no scripting module behind it."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Haptic detents on the slider and the crash-recovery banner (2026-10-23)."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Print-ready pitch test sheet, lab notebook tab, \"Hear this line\" sonification and OSC in (2026-10-23). MIDI in and out is built (S09, 2026-10-25; see the MIDI line below). Notebook notes and rerun are built (R08, 2026-10-25); see the line below. OSC out: the encoder, a UDP sender and an \"OSC out\" rack unit (A to D as /studio/a to /studio/d, host and port in Config) are built and unit-tested (2026-10-24, 429 studio tests pass). Not yet tried on a phone; not yet patched to a control."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "MIDI in and out (2026-10-25, S09): a \"MIDI in\" unit (CC 0 to 127 or note velocity on jacks A to D; Gate on while a key is held; channel filter) and a \"MIDI out\" unit (jacks A to D sent as CC on one channel, only on change). Unit-tested; not yet tried on a phone with a keyboard. Open: MIDI mappings and channel settings reset on restart; Bluetooth MIDI devices need a scan that is not built; only the first port of each device is used; the device is closed when the studio is in the background, as the sensor bus is (not yet S01's general pause)."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Lab notebook notes and Rerun (2026-10-25, R08): notes on each entry; \"Rerun\" on Draw, Compose, Develop and Glitch saves makes a linked new entry. Unit-tested (19 + 3 tests); not yet on a phone. Open: no Rerun for FFT, Animate, Sequence, Node Lab, Math or captures; notes do not show in the Library."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Layout leftovers (2026-10-25, S11): slit-scan frames from the Sequence timeline; a UI Editor landscape front (its own panel positions; cables shared; \"Like portrait\" resets); Knob exact-value boxes inside the back's panel; landscape side panels for Library, Node Lab and Studio. Unit-tested (25 tests); not yet seen on a phone. Open: a node's number box still opens a full dialog; toolbar rows in landscape scroll sideways; UI Editor zoom and pan are shared between the two fronts."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "FM/AM nodes (2026-10-25, R04): an FM/AM node in Node Lab's Time section (AM, FM or Ring; Carrier and Modulator Hz, AM depth, FM index, Min and Max; Value, Carrier and Modulator outputs) and an FM/AM Image node in the Filter section (bands or a line shift across a picture). Unit-tested (28 tests); not yet tried on a phone. Open: no rack unit, since Node Lab has no number outputs to the rack yet; no FM/AM curve in the Math room; no sound (D2)."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Math room (2026-10-25, R03): six curve functions (linear, exponential, logarithmic, S-curve, clock gate, sensor average) with a plot against y = x and sliders with Reset; applied as a tone curve to a Library image (RGB or one channel, Mix, Before) and saved as a child image. Unit-tested (20 tests); not yet tried on a phone. Open: the saved image has no recipe, so the settings do not reopen; images only come from the Library."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "done",
+  "text": "Calculator room (2026-10-25, R02): expressions, history (100 lines), variables, units, hex/bin/oct, a result sent to a control or a Result jack. Unit-tested (73 tests); not yet tried on a phone. Open: history and variables are lost on restart; results go to knobs only; areas and volumes are not units."
+ },
+ {
+  "section": "Not built yet (from the 2026-10-21 plan)",
+  "state": "open",
+  "text": "After the pilot: scripting IDE (language undecided), low-poly 3D, Rosetta Code, math and FM/AM modules, 2D physics, the vocabulary themes. \"Afterpilot\" is a reserved name, not tied to any of them."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Compose: masks, adjustments, generator parameters, pinch-zoom view, transparent background PNG."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Draw image layers (+ Image), Animate \"+ Library frames\"."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Bridge: editor-app and notes-app round trips (send → edit → save → inbox → import as child). Brand names go away with item E."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Bridge: screen recording (consent dialog was cancelled in testing, not approved)."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "done",
+  "text": "Sequence: 120 Hz lock on the S21 works (mode 1, 120 Hz override; 758 vsyncs, 0 dropped)."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Camera: manual exposure, bursts with each stack mode, RAW/DNG, on a real capture."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Loop: free-run mode, torch strobe, Sequence as source."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Patch: hardware sensors, microphone, sensors from the other phone."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Develop: curve editor, masks (lasso, brush, spot), .cube import/export, style mix, presets."
+ },
+ {
+  "section": "Untested on a phone (unit-tested or built only)",
+  "state": "open",
+  "text": "Glitch: saving a result; JPEG generations with corruption on device."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Redo in every room (next to Undo)."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Layers (Draw, Compose): multi-select (hold), groups (Compose: real layer groups blended as one; Draw: object groups picked together), hold-and-drag to reorder."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Camera: zoom (pinch on the preview + exact value; recorded with the capture)."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Brushes: Compose showed strokes only after lifting the finger (fixed: live stroke preview); straight lines for the Draw pen and the Compose brush / eraser / mask."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Lasso selections copy / paste: Draw had it (Copy/Paste after a lasso); Compose: Copy / Cut / Paste of a selection as an exact clipped layer."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Animate: Save GIF (holds kept, at the Speed setting)."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Projectors leave the phone's brightness alone; Sequence has a Projector brightness setting."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Glitch: error correction (amount, scale 1/1–1/32, every N generations)."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Develop: histogram + vectorscope; mask stack (lasso, brush, spot, luminance; add / subtract / intersect / difference; opacity); blend mode + opacity for the edit; Style tab with 10 artistic styles + amount."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Library light table: pinch grid, stars / flags / colour labels (also in batch), sort, filters, loupe with swipe and zoom, side-by-side compare."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Stage 4, module routing: the Rack room (front: live outputs and source pickers; flip: jacks and cables), live outputs from Draw, Animate, Compose, Develop, FFT, Glitch, Camera, Loop, Node Lab into Compose layers, lab sources, the camera overlay and Node Lab; loops refused; routing-nodes renamed Node Lab. Spec: docs/ARCHITECTURE.md §13."
+ },
+ {
+  "section": "Requests 2026-10-17 (before the big test round)",
+  "state": "done",
+  "text": "Rack, later (2026-10-25): Sequence / Loop projector inputs and the Draw image-layer input (S07a), Patch signals as jacks and rack presets (S07b). Unit-tested (22 tests); not yet on a phone. Open from S07b: the LFO jacks run on their own clock, not the patch's; route jacks follow list order; presets are per project, not app-wide. Open from S07a: an unplugged live Draw layer stays as a grey box until deleted; the Sequence projector is not in the GIF or MP4 export; Draw's canvas publish may run before a decoded rack picture is set (reviewer note, to check on a phone)."
+ },
+ {
+  "section": "Requests 2026-10-18",
+  "state": "done",
+  "text": "Develop: 3D height map in the scope cycle; final step: deep analysis card (probe, line, region, clipping, waveform / RGB parade, 3D)."
+ },
+ {
+  "section": "Requests 2026-10-18",
+  "state": "done",
+  "text": "Studio routing moved into Node Lab: the whole app flips to its mirrored back; module backs with jacks, knobs, buttons and module presets; All cables overview. The Rack tab is gone."
+ },
+ {
+  "section": "Requests 2026-10-18",
+  "state": "done",
+  "text": "Studio module: projects (file menu), preferences, themes (Gruvbox, Dracula, Nord, Solarized, Monokai, One Dark, Tokyo Night, Catppuccin), profile, about."
+ },
+ {
+  "section": "Requests 2026-10-18",
+  "state": "done",
+  "text": "Themes reach canvas-like areas (2026-10-25, S12): the node editor canvas and nodes, Touch Pad strip, and the rack and studio-back panels use the theme's colours; Studio (default) looks as before. Open: the UI Editor's back still uses its own dark colours; the cable plug centre is now #0B0B0C (was #222222)."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "S02 left: Studio's \"Save all now\" writes eight JSON files on the main thread (StudioApp.kt); preview settings go to the camera from the main thread on every slider move; SlitScan calls router.inputBitmap while drawing (StudioApp.kt); Plugins and UI Editor read plugin files inside remember; the pitch-sheet SVG is written on the main thread. The 23:27 freeze is not reproduced."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "S02 review points: CameraRoom.kt catches CancellationException in runCatching around controller.open, so leaving Camera can show \"Camera: null\"; CameraController.kt creates jr and rr before the try, so a throw in rr leaks jr; the session wait after a disconnect could use a timeout."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "R05 left: the Physics room is not saved with the project; changing bounce, friction, frame rate or walls restarts the world; no touch on the canvas; lines have no thickness; no per-body hit jacks; the frame rate is not passed to Animate. The ARCHITECTURE.md section for the physics module is not written yet."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "Glitch room knobs \"Width Î”\" and \"Stride Î”\" show mojibake (ui/StudioApp.kt, the Glitch panel); the text should read Δ. Predates the sprint."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "Glitch filter on a Compose layer ignores a colour image: the layer path cannot reach the Library (R09 left-over)."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "R09: turning \"Sort angle\" switches Pixel sort on even when a modulator moves it; confirm that is wanted."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "S01 tidy-ups from review: a missing space after && in two MidiBus.kt checks; RunGateTest uses real delays (could flake on a slow machine); the microphone thread handover is untested (needs Android); the camera preview and screen-recording service are not gated yet."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "S01 battery: the drain (416 mAh with the screen off) is not re-measured; hand check s01-battery."
+ },
+ {
+  "section": "Known issues",
+  "state": "open",
+  "text": "BLOCKED on the user: 2026-10-15: user reports \"many things not reacting throughout the app\" (seen on the S21). Fixed so far: FFT brushes (paint only worked on Magnitude/Phase, Boost/Keep invisible, Boost ×0 under a filter), Glitch out-of-memory crashes on 12 MP photos (S9+, 03:00 and 03:04), lab hangs on unreadable images, Grab from Draw silently failing, Library losing its place. Still need: which other controls, and the S21's logcat (adb logcat -b crash and -s Studio) once it is connected."
+ },
+ {
+  "section": "Known issues",
+  "state": "done",
+  "text": "One FFT record on the S9+ had the summary \"FFT 0\" from a fixed label bug: cosmetic, old data, closed."
+ },
+ {
+  "section": "Known issues",
+  "state": "done",
+  "text": "The Loop run that started at 16:30 on 2026-10-14: no code path starts a run alone; a person starting the linked phone (its Start message starts this camera) explains it. Closed."
+ },
+ {
+  "section": "Quality of life, not done yet",
+  "state": "done",
+  "text": "Camera: \"Last in Library\" (2026-10-23)."
+ },
+ {
+  "section": "Quality of life, not done yet",
+  "state": "done",
+  "text": "Animate: frame thumbnails in the strip (2026-10-23)."
+ },
+ {
+  "section": "Quality of life, not done yet",
+  "state": "done",
+  "text": "Library: delete several picked images, and delete an image with everything made from it (2026-10-23; built and unit-tested, not driven on the phone)."
+ },
+ {
+  "section": "Compose, stage 2 (built 2026-10-16)",
+  "state": "done",
+  "text": "Layers: paint, text, fill, gradient; thumbnails, rename, flip."
+ },
+ {
+  "section": "Compose, stage 2 (built 2026-10-16)",
+  "state": "done",
+  "text": "Blending options: 17 modes, clip to layer below, blend-if."
+ },
+ {
+  "section": "Compose, stage 2 (built 2026-10-16)",
+  "state": "done",
+  "text": "Tools: select, lasso, crop, brush, eraser, eyedropper, fill/erase selection, selection masks."
+ },
+ {
+  "section": "Compose, stage 2 (built 2026-10-16)",
+  "state": "done",
+  "text": "Filters per layer: blur, sharpen, noise, invert, desaturate, posterize, threshold, FFT, Glitch."
+ },
+ {
+  "section": "Compose, stage 2 (built 2026-10-16)",
+  "state": "open",
+  "text": "Untested on a phone: selections, crop, blend-if, clipping, each filter, gradients, eyedropper."
+ },
+ {
+  "section": "Compose, stage 2 (built 2026-10-16)",
+  "state": "open",
+  "text": "Later: layer groups, per-layer full Develop (mixer, curve, LUT), healing/clone brush, transform handles on the canvas, text fonts."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "1. Graph model + evaluator (typed sockets, lazy, cached), Value/Math/Map Range."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "2. Editor canvas: nodes, bezier links, link by drag, add menu, pan/zoom, frame all, backdrop."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "3. Room nodes: Library Image, Draw Canvas, generators, Develop, filters, FFT, Glitch, Mix, Transform, Viewer, Save to Library, Send to Compose."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "4. Time nodes: Clock, LFO, Sensor (local/remote), Sample & Hold, Animate/Sequence Frames, Frame at, Layer Canvases, Drive Layer, Record to Animate; ▶ Live runner (S9+: ~18–23 fps on the LFO moiré). Tested on S9+: Live LFO sweep, Record (90-frame take, one Undo removes it), Animate playback. Not yet tested: Sensor nodes on a phone, Phone = Other over the Loop link, Sequence Frames."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "Patch bay room: \"Open as graph\" (routes → Sensor/LFO → Drive Layer chain; curves other than Linear and touch pad routes are noted on the node, not carried over)."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "Touch pad node (the Patch bay's TouchX/Y), Smooth node, Switch node (2026-10-25, S04; not yet on a phone). Open: Touch Pad's Down is not carried into groups; Switch takes numbers only, not images."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "5. Node Wrangler: lazy connect, lazy mix, preview any node, batch blend, swap A↔B, reroutes (tool + Add menu), auto-insert on links, align, box select. Fixed: lazy connect used the touch-down point as the drop point. Unit-tested; not yet tried by finger on a phone."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "6. Presets (save/load/delete + built-ins), Frames (label, colour, move with nodes, resize, remove), node groups (group, enter/exit, Group Input/Output with + sockets, shared definitions, ungroup, nested groups, per-use time state). Unit-tested; not yet tried by finger."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "Groups: remove or reorder a group socket; group presets (save one group to reuse in other projects) (2026-10-25, S05; unit-tested, hand checks in TESTING.md, not yet tried by finger). Open: sockets are edited only from inside the group; no renaming a socket; group presets are not shared to other phones; adding one preset twice makes two copies."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "7. Two-phone nodes: Send to Other Phone (Live stream or once), From Other Phone (also Loop captures), Projector (full screen), remote sensors. Both phones need this build (new link message). Unit-tested; S9+ installed; S21 was off adb (new port needed)."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "open",
+  "text": "Room internals as default graphs (open a room's own routing as a graph)."
+ },
+ {
+  "section": "Stage 3: routing-nodes (spec: docs/ARCHITECTURE.md §12)",
+  "state": "done",
+  "text": "Compose layer stack as a node (2026-10-25, S06: \"Compose Stack\" in Node Lab, four image inputs that feed Compose's layers; unit-tested, not yet on a phone). Open: single layers' opacity, blend or visibility are not node inputs; the Node Lab preview refreshes only when you return to it."
+ },
+ {
+  "section": "Spec items not built yet",
+  "state": "open",
+  "text": "§6 Sync: no file transfer between the phones; each phone has its own project."
+ },
+ {
+  "section": "Spec items not built yet",
+  "state": "done",
+  "text": "Draw: high-res render mode (2×, 3×, 4096 px, 6000 px next to Save; 2026-10-25, S13; unit-tested, not yet on a phone). Open: the size is not used by the rest of the studio (Animate frames, routing, Loop, Library previews); image layers gain no detail when scaled up."
+ },
+ {
+  "section": "Spec items not built yet",
+  "state": "done",
+  "text": "Animate: barrier print export at a chosen DPI / paper size (2026-10-25, S14; not yet printed). Open: the recipe keeps the animation but not the paper or dpi; a phone may run out of memory at A4 and 300 dpi (check it)."
+ },
+ {
+  "section": "Spec items not built yet",
+  "state": "open",
+  "text": "Bridge: watch folders only while the app is open (no background service)."
+ },
+ {
+  "section": "Spec items not built yet",
+  "state": "done",
+  "text": "Draw: stroke rendering cache (2026-10-25, S03; unit-tested, hand checks in TESTING.md, not yet on a phone). Open: a cache rebuild paints on the main thread (see S02); the cache planner's own tests do not cover undo after a bake or a visibility toggle in the middle of the stack."
+ }
+];
+const PENDING_COUNTS = {"open": 50, "partial": 1, "done": 66};
+const SPRINT = [
+ {
+  "id": "S01",
+  "title": "Nothing runs while the studio is closed",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S02",
+  "title": "Main-thread work that can freeze the app",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S03",
+  "title": "Draw stroke rendering cache",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S04",
+  "title": "Node Lab: Touch pad, Smooth and Switch nodes",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S05",
+  "title": "Node groups: remove or reorder a group socket; group presets",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S06",
+  "title": "Compose layer stack as a Node Lab node",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S07a",
+  "title": "Rack: Sequence and Loop projector inputs, Draw image-layer input",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S07b",
+  "title": "Rack: Patch signals as jacks, rack presets",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S08",
+  "title": "Plugins: node-graph behaviour behind a plugin's controls; the RGB parade as a real scope plugin; share a plugin file through Android's share sheet",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S09",
+  "title": "MIDI in and out",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S10",
+  "title": "Sensor threshold as an envelope trigger",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S11",
+  "title": "Layout leftovers",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S12",
+  "title": "Themes reach canvas-like areas (node editor, rack panels)",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S13",
+  "title": "Draw high-res render mode (render at a chosen size, not only screen-exact)",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S14",
+  "title": "Animate barrier print export at a chosen DPI and paper size",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S15",
+  "title": "Compose: per-layer full Develop, transform handles on the canvas, text fonts",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S15b",
+  "title": "Compose: healing and clone brush",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S16",
+  "title": "Feedback extras: a \"never used\" list in the digest; hand-made catalog entries for loose tests (tools/usecases/REVIEW.md)",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S17",
+  "title": "Phone-to-phone sync: send an asset or a whole project over the Loop link",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S18",
+  "title": "Bridge: watch folders while the app is open (no background service)",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S19",
+  "title": "Room internals as default graphs (open a room's own routing as a graph)",
+  "status": "active",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S20",
+  "title": "Review the merges that went in without a reviewer verdict",
+  "status": "done",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "S21",
+  "title": "Shake to report",
+  "status": "todo",
+  "phase": "Phase 1: open build items (pilot first)"
+ },
+ {
+  "id": "R01",
+  "title": "Vocabulary layer",
+  "status": "todo",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R02",
+  "title": "Calculator room",
+  "status": "done",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R03",
+  "title": "Math room",
+  "status": "done",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R04",
+  "title": "FM/AM module",
+  "status": "done",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R05",
+  "title": "2D physics room with dyn4j",
+  "status": "done",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R06",
+  "title": "Low-poly vector 3D room",
+  "status": "done",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R07",
+  "title": "Forge GUI builder and Wrap",
+  "status": "todo",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R08",
+  "title": "Lab notebook: notes and \"rerun this experiment\"",
+  "status": "done",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R09",
+  "title": "Glitch pixel-sort and orientation field; colour transfer between two Library images",
+  "status": "done",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R10",
+  "title": "Scripting IDE (JavaScript and Python first, then C++/Pascal via WebAssembly, HTML preview pane)",
+  "status": "todo",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R11",
+  "title": "Rosetta Code browser",
+  "status": "todo",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R12",
+  "title": "\"Copy as script\"",
+  "status": "todo",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ },
+ {
+  "id": "R13",
+  "title": "Sound as a signal (DAW mode): image and sound signals as one signal type",
+  "status": "todo",
+  "phase": "Phase 2: roadmap (the parts that need no decision from you)"
+ }
+];
+// PLAN-DATA-END
+
+const LOG = [
+  { d: "2026-10-26", t: "10:07", title: "Sprint S15b Compose clone and heal brush; S18 Bridge folder watching", tests: 1159, items: [
+    "Clone and Heal tools on Compose paint layers: pure CloneBrush with premultiplied alpha, snapshot isolation so heal does not drift, 15 tests.",
+    "Bridge watches folders (DCIM/Camera, Pictures, Screenshots, FV5) via FileObserver, started and stopped with the app through a RunGate hook.",
+    "Hand checks are in the Compose: clone and heal brush (s15b-*) and Bridge: folder watching (s18-*) rooms. Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-26", t: "10:01", title: "Sprint S18 Bridge folder watching", tests: 1142, items: [
+    "FileObserver on DCIM/Camera, Pictures, Screenshots and FV5 detects images written directly to the filesystem, complementing the MediaStore observer.",
+    "Observers start and stop with the app through a RunGate hook; pure BridgeWatcher handles paths and extension filtering (12 tests).",
+    "Hand checks are in the Bridge: folder watching room (s18-*) of the checklist. Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-26", t: "05:24", title: "Sprint S02 main-thread moves; R05 2D physics room", tests: 1129, items: [
+    "Camera, Library, Develop and Compose work moved off the UI thread: camera open and close, thumbnails in a bounded cache, preset saves, .cube import and export.",
+    "Physics room on dyn4j: shapes from Draw, gravity from the accelerometer, hits on a rack unit, frames to Animate (600-frame cap).",
+    "Hand checks are in the Main-thread work room (s02-*) and the Physics room with dyn4j room (r05-*) of the checklist. Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-26", t: "05:01", title: "Sprint S01 nothing runs while closed; R09 Glitch pixel sort restored", tests: 1046, items: [
+    "One run gate pauses every loop, sensor and socket while the studio is off screen: OSC, MIDI, sensors, Loop link, Node Lab, Patch live, plugins, cables.",
+    "Glitch: pixel sort with an orientation field and colours from a Library picture are back; the compile error is fixed, and \"Sort angle\" works with Pixel sort Off.",
+    "Hand checks are in the Nothing runs while closed room (s01-*) and the Glitch: pixel sort room (r09-*) of the checklist. Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-26", t: "02:10", title: "Sprint R06 low-poly 3D room", tests: 993, items: [
+    "A 3D room with five shapes, an orbit camera, flat shading and a grating on each face; faces under full opacity show moiré.",
+    "Save the view to the Library, or as an SVG; share the SVG through the share sheet.",
+    "Hand checks are in the 3D low-poly room of the checklist (r06-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-26", t: "01:20", title: "Sprint S17 phone-to-phone sync over Loop", tests: 917, items: [
+    "Send one Library picture, or the open project, to the other phone over the Loop link; sent in checked 256 KB pieces that resume.",
+    "Zip import is capped in entries and bytes, and a failed project unpack leaves no folder behind.",
+    "Hand checks are in the Phone-to-phone sync room of the checklist (s17-*). Tested over loopback only; not yet between two phones.",
+  ]},
+  { d: "2026-10-26", t: "00:37", title: "Sprint S08 plugin behaviour, parade scope and share sheet", tests: 881, items: [
+    "A plugin can carry a small graph behind its controls, with named outputs that UI Editor cables can read.",
+    "The RGB parade is a Scope plugin on the rack; Share… in the Forge and Studio → Plugins opens the share sheet.",
+    "Hand checks are in the Plugins: behaviour, parade scope, share room of the checklist (s08-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-26", t: "00:37", title: "Sprint S15 Compose: per-layer Develop, transform handles, text fonts", tests: 848, items: [
+    "Each Compose layer has the Develop tabs (Light, Color, Mixer, Curve, LUT); the Move tool shows corner, edge and rotate handles.",
+    "Text layers have nine font families, italic, alignment and letter spacing. The healing brush is still to do (S15b).",
+    "Hand checks are in the Compose: per-layer Develop, handles, fonts room of the checklist (s15-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "09:24", title: "Sprint R08 lab notebook: notes and Rerun", tests: 816, items: [
+    "Each notebook entry takes a note; Draw, Compose, Develop and Glitch saves can be rerun as a new linked entry.",
+    "Hand checks are in the Lab notebook room of the checklist (r08-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "09:17", title: "Sprint S07b patch jacks on the rack and rack presets", tests: 794, items: [
+    "The Patch bay is a rack unit with LFO 1, LFO 2, Touch X, Touch Y and Route 1 to 4 jacks.",
+    "A rack presets bar: six built-in presets and your own, saved with the project; loading one is one undo step.",
+    "Hand checks are in the Patch jacks and rack presets room of the checklist (s07b-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "09:15", title: "Sprint S11 landscape layouts and Sequence slit-scan source", tests: 772, items: [
+    "Slit-scan can take its frames from the Sequence timeline (One per item or By timing); the UI Editor has its own landscape front.",
+    "Knob exact-value boxes open inside the back's panel; Library, Node Lab and Studio use side panels in landscape.",
+    "Hand checks are in the Landscape layouts and Sequence slits room of the checklist (s11-*). Not yet seen on a phone.",
+  ]},
+  { d: "2026-10-25", t: "09:09", title: "Sprint R04 FM/AM nodes (value and image modulation)", tests: 748, items: [
+    "An FM/AM node on Node Lab's Time section (AM, FM or Ring; Value, Carrier and Modulator outputs) and an FM/AM Image node in Filter (bands or a line shift across a picture).",
+    "Hand checks are in the FM/AM nodes room of the checklist (r04-*). No sound. Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "09:05", title: "Sprint R03 Math room; S07a rack projector inputs and Draw image layer", tests: 720, items: [
+    "A Math room: six curve functions, a plot against y = x, and a tone curve applied to a Library image (RGB or one channel, Mix, Before); saved as a child image.",
+    "Rack: a Projector input on Sequence and Loop (full screen, or the first frame), and an Image layer input on Draw (a live layer, filed on Save; loops refused).",
+    "Hand checks are in the Math room and Rack: projector inputs and the Draw image layer rooms of the checklist (r03-*, s07a-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "04:25", title: "Sprint R02 Calculator room; S09 MIDI in and out", tests: 685, items: [
+    "A Calculator room: expressions with units and bases, a history of 100 lines and variables; a result goes to a knob or a Result jack.",
+    "MIDI in (CC or note velocity on A to D, Gate on while a key is held) and MIDI out (A to D as CC, only on change) rack units.",
+    "Hand checks are in the MIDI in and out and Calculator rooms of the checklist (s09-*, r02-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "04:10", title: "Sprint S06 Compose Stack node; S13 Draw render size", tests: 569, items: [
+    "Node Lab gets a Compose Stack node: four image inputs feed Compose's layers, and Unlinked chooses Rack or Hide.",
+    "Draw's Size button next to Save renders at 2×, 3×, 4096 px or 6000 px; the size is kept with the canvas and clamped to fit memory.",
+    "Hand checks are in the Compose Stack and Draw render size rooms of the checklist (s06-*, s13-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "04:01", title: "Sprint S05 node group sockets and presets; S16 feedback never-used list", tests: 529, items: [
+    "Node Lab groups get a Sockets… dialog (move up or down, remove) and group presets; links and typed values follow every use of the group. One undo per change.",
+    "The feedback digest gets a \"Never used\" part (rooms never opened, buttons never tapped, sliders never moved over 7 days); 15 more catalog entries are hand-checked.",
+    "Hand checks are in the new Group sockets and Feedback digest rooms of the checklist (s05-*, s16-*). The digest checks run on the Pi.",
+  ]},
+  { d: "2026-10-25", t: "01:22", title: "Sprint S12 themes on canvas areas; S14 barrier print size", tests: 513, items: [
+    "Node Lab canvas, Touch Pad strip, rack and studio-back panels take the chosen theme's colours. Studio (default) looks as before.",
+    "Animate's barrier view saves at a chosen paper (Screen, A4, A5, Letter) and DPI (150, 300, 600); the size is capped so the image fits in memory.",
+    "Hand checks are in the new Themes and Animate print rooms of the checklist (s12-*, s14-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "01:11", title: "Sprint S04 Node Lab Touch Pad, Smooth, Switch; S10 sensor trigger for envelopes", tests: 484, items: [
+    "Node Lab gets a Touch Pad (X, Y, Down), a Smooth (time-based, rise and fall) and a Switch (Pick or Fade). Patch bay \"Open as graph\" now builds a real Touch Pad.",
+    "Envelopes can start from a sensor threshold (Light, Roll, Pitch and so on) with a band and a rising or falling edge. The sensors and mic also switch off in the background until S01 lands.",
+    "Hand checks are in the Node Lab and Envelope rooms of the checklist (s04-*, s10-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "01:00", title: "Sprint S03: Draw stroke rendering cache", tests: 444, items: [
+    "Finished strokes and layers are kept in two bitmaps; Draw redraws only the layers that changed. Pure planner (LayerCachePlanner) unit-tested with 15 tests.",
+    "Subtract layers are never painted onto a cached picture; they are drawn live, so Subtract results stay exact.",
+    "Hand checks are in the Draw room of the checklist (s03-*). Not yet tried on a phone.",
+  ]},
+  { d: "2026-10-25", t: "00:20", title: "Feedback on the S21 too; the checklist shows what the phones did", tests: 429, items: [
+    "The same studio build (with feedback) is installed on the S21 over its wireless debugging address; the first launch there asks the feedback question.",
+    "The checklist page now shows evidence badges from real taps: 9 tests (for example the Config and Plugins steps, and the live presets). Camera burn-in tests still need your own ✓ or ✕.",
+    "The collector recorded a freeze on the S9+ at 23:27 (the studio stopped responding). It may be part of the battery drain; the stack trace needs adb.",
+  ]},
+  { d: "2026-10-24", t: "23:50", title: "OSC out: encoder, UDP sender and a rack unit, unit-tested", tests: 429, items: [
+    "OscEncoder writes OSC messages (float arguments) that OscParser reads back; OscSender sends them over UDP. 17 OSC tests, and the full studio suite (422 tests) passes.",
+    "New OSC out rack unit: patch up to four values into A to D and they go out as /studio/a to /studio/d (0 to 1) to the host and port set in Config. Switch it on from the Studio's back. Unit-tested; not yet tried on a phone.",
+  ]},
+  { d: "2026-10-24", t: "23:21", title: "Plan front page, and pending tasks mirrored from PENDING.md", tests: 409, items: [
+    "The log opens on a Plan page: what is happening now (short test sessions on the S9+), what is being fixed next, the open build items, the roadmap, and the decisions still needed from you.",
+    "Pending tasks are mirrored from docs/PENDING.md (45 open, 1 partly done; 'Show done items' reveals the rest). Rebuilt by tools/logpage/build_plan.py, so the page follows the file.",
+    "Not changed: the test checklist and the changelog keep their content and your marks.",
+  ]},
+  { d: "2026-10-24", t: "13:50", title: "Optional diagnostic data: usage and crash reports to a collector", tests: 409, items: [
+    "New switch in Studio → Config → Feedback: 'Send optional diagnostic data', off by default, with Basic and Full levels. The studio also asks once on first launch. 'See what would be sent' shows the real report; 'Delete my data' asks the server to forget this phone.",
+    "Basic sends time per room, how often controls are used, errors, crashes (short stack trace), app version and phone model. Full adds the last 300 debug lines and studio settings. Never sent: pictures, projects, file names, typed text (except a note you choose to send), name or location. Links, emails, file paths and IP addresses are removed from errors and logs.",
+    "A collector runs on deb-server-1; a nightly job pulls a digest of the last day. Seen on the S9+ against a test server: a session report and a forced crash arrived. The public HTTPS address still needs one command at the Pi (see docs/FEEDBACK.md).",
+  ]},
+  { d: "2026-10-23", t: "19:35", title: "Queue session: gates, envelopes, channels, sensors, palette, bounded layout and more", tests: 394, items: [
+    "Gates and envelopes: Gate socket and eight Node Lab nodes (Gate Switch, Trigger to Gate, Gate to Trigger, Gate Logic, Delay, Divide, Chance, Envelope); an envelope editor with draggable handles; long-press any slider's name to add an envelope (hold-to-gate button or a clock). Seen on the S9+.",
+    "Rack: Value, Trigger and Gate jacks; Studio gates (two switches and a clock), Sensors (with record and replay of a take), OSC in (UDP 9000, seen working from the PC), Channel splitter, Slit-scan stream input; Node Lab takes numbers in through Signal 1 and 2. UI Editor ports are typed and its cables drive the real controls.",
+    "Subtract and Reverse Subtract blends in Compose, camera burn-in, Node Lab Mix and Draw. Channels: Split, Merge and Channel Mix nodes, a 3-channel overlay in 3D analysis.",
+    "Layout: landscape side panel with a draggable edge in eleven rooms, exact-value boxes open inside the panel, page rooms held to a readable width. A/B in Compose, FFT, Glitch, Animate; History lists in Animate, Sequence, Develop; Fringes overlay in Draw; Slit-scan from Library images or a rack stream.",
+    "Also: command palette notification and Quick Settings tile, Plugins room, favourite apps in the Bridge (no brand names left in the app), crash-recovery banner, haptic detents, math parameters, lab notebook, pitch test sheet, 'Hear this line', Library multi-delete. The App icon now shows more of the picture.",
+    "Not seen by hand yet: see the V-list in docs/QUEUE.md (gestures and live chains that cannot be driven over adb). Blocked: the S21 'many things not reacting' report needs the S21's logcat.",
+  ]},
+  { d: "2026-10-21", t: "23:10", title: "A live cable no longer hides your picked image", tests: 273, items: [
+    "Cause of 'FFT shows the same picture and I can't open anything else': a saved rack cable Compose → FFT overrides every picked or loaded image. The cause was on the phone (routing.json), and nothing on screen said so.",
+    "FFT, Develop and Glitch now say 'Live from <source>' and have an 'Unplug' button. Picking an image, Use in, or Reopen recipe unplugs the cable for you, so you see what you chose.",
+    "Saving while a cable feeds a lab now records the cabled picture as the recipe's source, so reopening that save finds it.",
+  ]},
+  { d: "2026-10-21", t: "22:30", title: "FFT: updating indicator, saved results open as the result", tests: 272, items: [
+    "FFT says 'updating…' while a filter or paint change is being recalculated, and the debug log (level 3) records how long each recalculation took.",
+    "Library → Reopen recipe on an FFT save now opens the Result view, so the saved picture is what you see; the filter and paint are still there.",
+    "Checked on the S9+ by running the studio on a simulated second display (your screen untouched): the LowPass chip, 15 paint dabs and Save all worked. If FFT still misbehaves on your phone, the new log line shows why.",
+  ]},
+  { d: "2026-10-21", t: "19:20", title: "Pre-pilot build: overlays burnt in, nested groups, UI Editor, plugins, Config, A/B, gestures", tests: 272, items: [
+    "Camera: the overlay is burnt into the saved photo with a blend mode, opacity and a Burn switch (the preview stays plain opacity). Settings are recorded and come back with Open in Camera; a Library image used as overlay becomes a parent. Loop captures are not burnt yet.",
+    "Draw: groups nest and fold, in rows of tabs that branch downwards; hide a group, Hide all / Show all, rename; Duplicate copies exactly in place (Paste still offsets); tab chips pick single layers; a History button. Older projects' groups get names.",
+    "Sliders: every slider has a two-zone thumb: blue half drags across the range, red half takes single fine steps (tap a side, hold to repeat and speed up, drag sideways). Fine step = 10^(floor(log10(range)) − 2).",
+    "History and gestures: labelled step lists (jump to any step) in Draw, Compose, FFT, Glitch, Node Lab and the UI Editor. Two-finger tap = undo, three-finger tap = redo, three-finger swipe = next / previous room, swipe in from the right edge = History, four-finger tap = the list.",
+    "Studio → Config replaces Profile: user.profile (the app's folder) and user.workspace (local storage) hold your profile, every flag and developer option, and a table of math parameters; old settings were moved across. Exports carry user.profile; screen recordings go to the open project.",
+    "Debug terminal: three levels (errors, info, trace), standard out only, no input; every log call in the app goes through it.",
+    "Develop: channel mixer in RGBA, CMYK and Lab (baked into the same table as the other adjustments). The 3D analysis can use any channel of any of the three as height.",
+    "UI Editor (new room): the whole UI on one canvas. Front: move and resize controls and panels. Back: the same canvas turned over and mirrored, every control a jack; drag from any jack to any other. Saved with the project. The cables are stored but do not drive the controls yet.",
+    "Plugins: a .studiomodule file (data only), Studio → Plugins to install, switch on, export and remove, and the Module Forge room to build one. A switched-on plugin gets a panel in the UI Editor.",
+    "A/B compare in Draw and Develop: hold the canvas still, and the quarter decides: input, vertical split, horizontal split, or B in full. An A/B unit with jacks A and B is on the rack.",
+    "Slit-scan (new room): each slit of a picture taken from a different Animate frame, with a time offset per slit. Sensor nodes in Node Lab gained High-pass, Change and Seed outputs.",
+    "Underneath: the formulas are in their own readable files (slider steps, moiré fringes, envelopes, colour spaces, sensor filters, group logic, history). 108 new unit tests, 272 in all, all passing. Moiré fringe and envelope maths have no screen yet.",
+    "Built with a local model on the home PC (Qwen3-Coder 30B): it wrote 9 of the 12 pure-logic pieces against hand-written tests, 3 were written or fixed by hand, and every file was reviewed (docs/AGENT-WORKFLOW.md).",
+    "This page: a note field under every check, feedback boxes per room, overall and per changelog entry, and Copy all feedback. 114 new checks for this build. Nothing has been tried by hand yet.",
+  ]},
+  { d: "2026-10-18", t: "02:30", title: "Studio routing in Node Lab, Studio module, deep analysis", tests: 164, items: [
+    "Node Lab → ⟲ Studio routing turns the whole app round to its mirrored back: each module tab shows its jacks and cables above, knobs, buttons and module presets below; All cables shows every cable. The Rack tab is gone.",
+    "A Studio module first in the room bar: projects (new, open, copy, rename, delete, export and import .zip), preferences, profile, about.",
+    "Themes: Studio, Gruvbox dark and light, Dracula, Nord, Solarized dark and light, Monokai, One Dark, Tokyo Night, Catppuccin Mocha and Latte.",
+    "Develop: the scope chip continues to a 3D height map, then a deep analysis card over the canvas: probe, line profile, region statistics, clipping, waveform or RGB parade, interactive 3D.",
+  ]},
+  { d: "2026-10-18", t: "00:30", title: "Stage 4: the Rack (studio routing)", tests: 160, items: [
+    "A Rack room: every module is a unit. The front shows outputs live and picks each input's source; Flip shows the jacks and hanging cables to drag (Reason-style).",
+    "Live from Draw, Animate, Compose, Develop, FFT, Glitch, Camera, the Loop link and Node Lab into Compose live layers, the lab sources, the camera overlay and Node Lab's Module In nodes.",
+    "Loops between modules are refused; saving a result from a live input files the input first. routing-nodes is now Node Lab.",
+  ]},
+  { d: "2026-10-17", t: "23:58", title: "Library light table", tests: 157, items: [
+    "Stars, pick/reject flags and colour labels, one image or many at once; sort by newest, oldest, rating or kind; filter by marks.",
+    "Pinch the grid for more or fewer columns; tap for a full-screen loupe (swipe, pinch zoom, marks); Compare two picked images side by side.",
+  ]},
+  { d: "2026-10-17", t: "23:50", title: "Develop: scopes, mask stack, blending, artistic styles", tests: 155, items: [
+    "Histogram and vectorscope over the image.",
+    "Masks as a stack: lasso, brush, spot colour and a new luminance range, combined by add, subtract, intersect or difference, each with its own opacity.",
+    "Blending for the whole edit: 9 blend modes and opacity.",
+    "The Style tab: 10 artistic styles made in the app (Blue ink, Pencil, Charcoal, Marker, Watercolour, Oil paint, Comic, Halftone, Engraving, Neon) with an amount; mixing in another image stays below.",
+  ]},
+  { d: "2026-10-17", t: "23:40", title: "Requests of 17 October: tools and quality of life", tests: 148, items: [
+    "Redo in every room.",
+    "Compose layer groups (blended as one), hold to pick several layers, hold and drag to reorder; Draw object groups and the same chip gestures.",
+    "Brushes: the stroke now shows while painting (it only appeared after lifting the finger); straight lines for brush, eraser, mask and the Draw pen.",
+    "Compose: Copy / Cut / Paste of a selection as an exact clipped layer.",
+    "Camera zoom (pinch or exact); Animate Save GIF; projectors keep the phone's brightness, Sequence has its own setting.",
+    "Glitch: error correction by amount, at a scale, every N generations.",
+  ]},
+  { d: "2026-10-16", t: "22:10", title: "Local version control", items: [
+    "Git repository on branch main (local only, no remote). First commit 884cfdc holds everything up to here.",
+    ".gitignore skips build output, local.properties, IDE folders and recovery files; .gitattributes keeps gradlew's line endings.",
+  ]},
+  { d: "2026-10-16", t: "22:00", title: "routing-nodes step 7: two-phone nodes", tests: 138, items: [
+    "Send to Other Phone: streams its input to the phone linked in Loop while Live (Max fps, Size, JPEG or PNG), or sends once.",
+    "From Other Phone: the latest picture received, or the latest Loop capture, with a Count that ticks up.",
+    "Projector: its input full screen at full brightness, live while Live runs, pixel-exact.",
+    "Two presets: stream a live moiré to the other phone; project what the other phone sends. That completes Stage 3.",
+  ]},
+  { d: "2026-10-16", t: "21:50", title: "Test checklist and this log", items: ["docs/TESTING.md and this page: every untested feature, by room, with results saved per check."] },
+  { d: "2026-10-16", t: "14:10", title: "routing-nodes step 6: frames and node groups", tests: 137, items: [
+    "Frames: labelled, tinted boxes; drag the label bar to move them with their nodes, the corner to resize; rename, recolour, remove.",
+    "Node groups (Ctrl+G): links crossing the selection become the group's sockets. Enter a group to edit it with Group Input / Output; link to + to add a socket.",
+    "Every copy of a group shares its insides; groups are listed in the Add menu; Ungroup restores the nodes and carries typed values inside.",
+    "Groups nest (never inside themselves); Live state is kept per copy; the backdrop and Run use the top graph.",
+    "Rename any node. S21 updated (port 36799).",
+  ]},
+  { d: "2026-10-16", t: "13:30", title: "routing-nodes step 5: Node Wrangler tools", tests: 131, items: [
+    "Box select, Lazy mix, Add reroutes (swipe across links), reroute dots that take on the type flowing in.",
+    "Auto-insert: drop a lone node on a link to put it in between. Align (row / column), Swap A↔B.",
+    "Patch bay → Open as graph: routes become Sensor / LFO → Drive Layer nodes.",
+    "Fixed: Lazy connect used the touch-down point as the drop point, so it never linked.",
+  ]},
+  { d: "2026-10-16", t: "03:45", title: "routing-nodes step 4: time nodes and Live", tests: 126, items: [
+    "▶ Live runs the graph every display frame. Nodes: Clock, LFO, Sensor (this phone or the linked one), Sample & Hold.",
+    "Animate Frames, Sequence Frames and Frame at to play a set; Layer Canvases (vector stack with blend); Drive Layer (a Patch route as a node).",
+    "Record to Animate: arm it; one Undo in Animate removes the take.",
+    "Previews render straight at preview size: the LFO moiré went from 8 to 18–23 fps on the S9+.",
+    "Four Live presets. Tested on the S9+: LFO sweep, a 90-frame recording, Animate playback.",
+  ]},
+  { d: "2026-10-16", t: "03:02", title: "Stage 3 begins: routing-nodes steps 1–3", tests: 117, items: [
+    "Node editor in the Blender style: typed, colour-coded sockets; bezier links; drag to link, pick links up, drop on a node to auto-connect.",
+    "Nodes: Library Image, Draw Canvas, Value, Grating, Radial Burst, Ellipse Hatch, Render, Math, Map Range, Transform, Develop, Mix (17 modes), Invert, Desaturate, Posterize, Threshold, Blur, Sharpen, Noise, FFT, Glitch, Viewer, Save to Library, Send to Compose.",
+    "Lazy evaluation with a per-node cache; backdrop preview of any node; Save / Send run full size and keep the graph as recipe.",
+    "Tools: Select, Lazy connect, Cut links; mute, collapse, duplicate; presets with four built-ins.",
+  ]},
+  { d: "2026-10-16", t: "02:08", title: "Compose stage 2: layers, blending, editing tools", tests: 108, items: [
+    "Tools: Select, Lasso, Brush, Eraser, Mask, Eyedropper, Crop. Paint, text, fill and gradient layers.",
+    "Blending: 17 modes, opacity, clip to layer below, blend-if. Per-layer filters incl. FFT pass and Glitch.",
+    "Selections to feathered masks; fill / erase selections; thumbnails, rename, flip; colour picker with exact values.",
+  ]},
+  { d: "2026-10-16", t: "01:52", title: "Compose stage 1: the main layered editor", tests: 102, items: [
+    "A GIMP-style, touch-first compositor: documents of any size on white, black or transparent.",
+    "Layers from Library, Draw snapshots and live generators; opacity, blend modes, transforms, painted masks, Develop adjustments.",
+    "Save with every image used as a parent; Reopen recipe brings the stack back.",
+  ]},
+  { d: "2026-10-16", t: "01:35", title: "Exact values everywhere; Clear all in Animate", tests: 97, items: [
+    "Tap any slider's number to type an exact value (comma works), with − / + / −− / ++ nudges. Shutter accepts 1/125, 8ms, 2s.",
+    "Develop curve points get Input / Output fields. Animate → Clear all (undoable).",
+  ]},
+  { d: "2026-10-15", t: "17:46", title: "Library routes to every room", tests: 95, items: [
+    "Use in → Draw, Animate, Sequence, Develop, FFT, Glitch, Camera (overlay), Loop (first frame), Patch.",
+    "Long-press to pick several images in order and send them together. Every arrival is undoable.",
+  ]},
+  { d: "2026-10-15", t: "17:00", title: "Sequence framing fixed", tests: 94, items: [
+    "Frame shapes (Screen, First item, 1:1, 4:3, 3:4, 16:9, 9:16); per item Fit / Fill / 1:1 and Turn 90°.",
+    "The projector scales down instead of cropping; the preview prepares frames once and plays in real time.",
+  ]},
+  { d: "2026-10-15", t: "15:16", title: "Library images in Draw and Animate", tests: 91, items: [
+    "Draw → + Image: image layers that move, twist, stretch and blend, and travel into Animate, barrier, Sequence, Camera overlay and Patch.",
+    "Animate → + Library frames.",
+  ]},
+  { d: "2026-10-15", t: "12:15", title: "FFT brushes and crash fixes", tests: 86, items: [
+    "FFT brushes switch to the spectrum, show rings, and Boost works under filters.",
+    "Fixed out-of-memory crashes in the Glitch lab on 12 MP photos; failed previews show a message instead of crashing the app.",
+  ]},
+  { d: "2026-10-14", t: "20:46", title: "Review pass over all eight steps", tests: 85, items: [
+    "Opening something from Library is undoable in every room; heavy previews stop when a newer edit arrives.",
+    "Library: correct parents for two-parent images, filters and tags, delete with confirmation. Pending list in docs/PENDING.md.",
+  ]},
+  { d: "2026-10-14", t: "20:26", title: "Step 8: FFT lab and Glitch lab", tests: 76, items: [
+    "FFT: spectrum views, low / high / band-pass, spectrum painting, phase swap.",
+    "Glitch: raw byte misreads, chroma shift, fills, JPEG generations with corruption, sweep wall.",
+  ]},
+  { d: "2026-10-14", t: "19:36", title: "Step 7: Develop", tests: 67, items: [
+    "Exposure, temperature / tint, levels, tone curve, 8-band hue mixer, baked into one LUT; .cube import and export.",
+    "Masks (lasso, brush, spot colour), style mix, presets, full-resolution save.",
+  ]},
+  { d: "2026-10-14", t: "17:47", title: "Step 6: Patch bay", tests: 60, items: [
+    "Sensors, microphone, touch pad and LFOs drive Draw layer parameters with range, curve and smoothing; the other phone's sensors over Loop.",
+    "Record to Animate while live.",
+  ]},
+  { d: "2026-10-14", t: "16:25", title: "Step 5: Camera and Loop", tests: 54, items: [
+    "Camera2 with manual controls, bursts with optical stacking, RAW, preview overlays.",
+    "Loop: two phones as projector and camera over TCP; the first real camera loop ran at 16:30.",
+  ]},
+  { d: "2026-10-14", t: "15:28", title: "Step 4: Bridge and watch folders", tests: 49, items: [
+    "Send to Samsung Gallery editor and Notes; inbox matches returns to sends; share target; screen recording.",
+    "S9+ Library restored (25 assets) after the lineage loss found in step 3.",
+  ]},
+  { d: "2026-10-14", t: "14:44", title: "Step 3: Sequence and projector", tests: 43, items: [
+    "Timeline at 60 / 90 / 120 Hz, vsync-exact projector, GIF and MP4 export.",
+    "Fixed: a large Library index could be set aside as corrupt (now streamed, recipes in their own files).",
+  ]},
+  { d: "2026-10-14", t: "01:04", title: "Step 2: Animate", tests: 32, items: [
+    "Frames as canvas recipes, onion skin, playback, Rec drag, step helper, barrier (scanimation) view and export.",
+  ]},
+  { d: "2026-10-13", t: "23:30", title: "Step 1: Draw and Library", tests: 24, items: [
+    "Grating and burst generators, stroke objects with stroke stacks, saved transforms, pen presets, lasso.",
+    "Library with lineage: every save records parents, operation, recipe, device and time.",
+  ]},
+  { d: "2026-10-13", t: "20:14", title: "Project started", items: ["Android Studio setup on Windows, adb over Tailscale to the S21 and S9+, architecture in docs/ARCHITECTURE.md."] },
+];
+
+const $ = (s, el = document) => el.querySelector(s);
+const state = {};           // id -> { s: "works" | "broken" | "", n: note }
+const auto = {};            // id -> evidence from daily use (written by the nightly feedback job): { a: seen|touched|partial, n: installs, e: errors, c: crashes, t: last seen }
+let db = null, filter = "all";
+const LOCAL_KEY = "moire-studio-checks";
+
+function loadLocal() { try { Object.assign(state, JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}")) } catch (e) {} }
+function saveLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(state)) } catch (e) {} }
+
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600) }
+
+function save(id) {
+  const v = state[id] || { s: "", n: "" };
+  saveLocal();
+  if (!db) return;
+  db.collection("checks").doc(id).set({ s: v.s || "", n: v.n || "", t: new Date().toISOString() })
+    .catch(e => toast("Not saved to your account: " + (e && e.message || "try again")));
+}
+
+function allItems() { return ROOMS.flatMap(r => r.items.filter(i => i[0] !== "#").map(i => ({ room: r.id, id: i[0] }))) }
+
+function renderRooms() {
+  const root = $("#rooms");
+  root.innerHTML = "";
+  for (const r of ROOMS) {
+    const d = document.createElement("details");
+    d.className = "room"; d.open = true; d.dataset.room = r.id;
+    const s = document.createElement("summary");
+    s.innerHTML = `<h2></h2><span class="n"></span>`;
+    s.querySelector("h2").textContent = r.title;
+    d.append(s);
+    if (r.intro) { const p = document.createElement("p"); p.className = "intro"; p.textContent = r.intro; d.append(p) }
+    const fb = document.createElement("div"); fb.className = "fb";
+    fb.innerHTML = `<label>Feedback on this room</label><textarea data-fb="room:${r.id}" placeholder="Anything about the room as a whole"></textarea>`;
+    d.append(fb);
+    for (const [id, doText, expect] of r.items) {
+      if (id === "#") { const g = document.createElement("div"); g.className = "group"; g.textContent = doText; d.append(g); continue }
+      const it = document.createElement("div");
+      it.className = "item"; it.dataset.id = id;
+      it.innerHTML = `<div class="text"><p class="do"></p><p class="expect"></p><span class="auto" hidden></span></div>
+        <div class="btns"><button class="w" aria-pressed="false" title="Works">✓</button><button class="b" aria-pressed="false" title="Broken">✕</button><button class="nb" title="Note">✎</button></div>
+        <div class="note"><textarea id="note-${id}" rows="1" placeholder="Note: what happened? Which phone?"></textarea></div>`;
+      it.querySelector(".do").textContent = doText;
+      it.querySelector(".expect").textContent = expect;
+      d.append(it);
+    }
+    root.append(d);
+  }
+  root.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const it = b.closest(".item"); if (!it) return;
+    const id = it.dataset.id, v = state[id] || (state[id] = { s: "", n: "" });
+    if (b.classList.contains("nb")) { const n = it.querySelector(".note"); n.hidden = !n.hidden; if (!n.hidden) n.querySelector("textarea").focus(); return }
+    const want = b.classList.contains("w") ? "works" : "broken";
+    v.s = v.s === want ? "" : want;
+    if (v.s === "broken") it.querySelector(".note").hidden = false;
+    save(id); paint();
+  });
+  let noteTimer = {};
+  root.addEventListener("input", e => {
+    const ta = e.target.closest("textarea"); if (!ta || !ta.closest(".item")) return;
+    const id = ta.closest(".item").dataset.id, v = state[id] || (state[id] = { s: "", n: "" });
+    v.n = ta.value; grow(ta); markNote(ta.closest(".item"), v);
+    clearTimeout(noteTimer[id]); noteTimer[id] = setTimeout(() => save(id), 700);
+  });
+}
+
+// Evidence from daily use. It says the steps were carried out (and whether an error was logged around them), never that the result looked right: only the ✓ button does that.
+function paintAuto(it, a) {
+  const el = it.querySelector(".auto");
+  if (!a || !a.a || a.a === "none") { el.hidden = true; return }
+  const when = a.t ? new Date(a.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+  const label = { seen: "done in use", touched: "area used", partial: "started" }[a.a] || a.a;
+  const bad = (a.c || 0) > 0 ? " · freeze or crash that day" : (a.e || 0) > 0 ? " · errors logged" : "";
+  el.hidden = false;
+  el.dataset.a = bad ? "warn" : a.a;
+  el.textContent = label + (a.n ? " ×" + a.n : "") + (when ? " · " + when : "") + bad;
+  el.title = "Seen from the studio's optional diagnostic data. Confirm with ✓ or ✕ yourself.";
+}
+
+function grow(t) { t.style.height = "auto"; t.style.height = Math.max(t.scrollHeight + 2, 38) + "px" }
+function markNote(it, v) { it.querySelector(".nb").classList.toggle("has", !!(v && v.n)) }
+
+// Free-text feedback boxes (overall, per room, per changelog entry) share the checks store: ids "general", "room:<id>", "log:<date>-<time>".
+const fbTimer = {};
+document.addEventListener("input", e => {
+  const ta = e.target.closest("textarea[data-fb]"); if (!ta) return;
+  const id = ta.dataset.fb, v = state[id] || (state[id] = { s: "", n: "" });
+  v.n = ta.value; grow(ta);
+  clearTimeout(fbTimer[id]); fbTimer[id] = setTimeout(() => save(id), 700);
+});
+
+function feedbackText() {
+  const lines = [`Moire Studio pilot feedback, ${new Date().toISOString()}`, ""];
+  const g = (state.general || {}).n; if (g) lines.push("OVERALL", g, "");
+  for (const r of ROOMS) {
+    const out = [];
+    const rf = (state["room:" + r.id] || {}).n; if (rf) out.push("  Room feedback: " + rf);
+    for (const [id, doText] of r.items) {
+      if (id === "#") continue;
+      const v = state[id] || {};
+      if (v.s === "broken" || v.n) out.push(`  [${v.s || "-"}] ${id}: ${doText}` + (v.n ? `\n      note: ${v.n}` : ""));
+    }
+    if (out.length) lines.push(r.title.toUpperCase(), ...out, "");
+  }
+  for (const e of LOG) { const f = (state[`log:${e.d}-${e.t}`] || {}).n; if (f) lines.push(`CHANGELOG ${e.d} ${e.t} ${e.title}`, "  " + f, "") }
+  return lines.join("\n");
+}
+$("#copy-fb").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(feedbackText()); toast("Feedback copied") }
+  catch (e) { toast("Couldn't copy: select the notes by hand") }
+});
+$("#dl-fb").addEventListener("click", async () => {
+  const text = JSON.stringify({ exported: new Date().toISOString(), checks: state }, null, 2);
+  try {
+    // On claude.ai the viewer is asked to save it; as a local file the browser downloads it.
+    const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if (dl) { await dl.save({ filename: "moire-studio-feedback.json", data: text }); toast("Saved"); return }
+    const blob = new Blob([text], { type: "application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "moire-studio-feedback.json"; a.click();
+    toast("JSON downloaded");
+  } catch (e) { if (!(e && e.code === "declined")) toast("Couldn't save: use Copy all feedback") }
+});
+
+function paint() {
+  const items = allItems();
+  let ok = 0, bad = 0;
+  for (const r of ROOMS) {
+    const d = $(`details[data-room="${r.id}"]`);
+    let rOk = 0, rBad = 0, rAll = 0, shown = 0;
+    for (const it of d.querySelectorAll(".item")) {
+      const v = state[it.dataset.id] || {};
+      rAll++; if (v.s === "works") rOk++; if (v.s === "broken") rBad++;
+      it.dataset.s = v.s || "";
+      it.querySelector(".w").setAttribute("aria-pressed", v.s === "works");
+      it.querySelector(".b").setAttribute("aria-pressed", v.s === "broken");
+      const ta = it.querySelector("textarea");
+      if (document.activeElement !== ta) { ta.value = v.n || ""; grow(ta) }
+      markNote(it, v);
+      paintAuto(it, auto[it.dataset.id]);
+      const a = auto[it.dataset.id];
+      const vis = filter === "all" || (filter === "open" && !v.s) || filter === v.s || (filter === "auto" && a && (a.a === "seen" || a.a === "touched"));
+      it.hidden = !vis; if (vis) shown++;
+    }
+    d.querySelectorAll(".group").forEach(g => g.hidden = filter !== "all");
+    d.hidden = shown === 0;
+    d.querySelector(".n").textContent = `${rOk + rBad}/${rAll}` + (rBad ? ` · ${rBad} broken` : "");
+    ok += rOk; bad += rBad;
+  }
+  document.querySelectorAll("textarea[data-fb]").forEach(t => { if (document.activeElement !== t) { t.value = (state[t.dataset.fb] || {}).n || ""; grow(t) } });
+  const n = items.length;
+  $("#bar-ok").style.width = (100 * ok / n) + "%";
+  $("#bar-bad").style.width = (100 * bad / n) + "%";
+  const inUse = items.filter(i => auto[i.id] && auto[i.id].a === "seen").length;
+  $("#counts").innerHTML = `<span><b>${n - ok - bad}</b> to test</span><span><b>${ok}</b> work</span><span><b>${bad}</b> broken</span><span><b>${inUse}</b> done in use</span><span>${n} checks</span>`;
+}
+
+function renderLog() {
+  const root = $("#log");
+  const days = [...new Set(LOG.map(e => e.d))];
+  const fmt = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  for (const day of days) {
+    const sec = document.createElement("section"); sec.className = "day";
+    const h = document.createElement("h2"); h.textContent = fmt.format(new Date(day + "T12:00:00")); sec.append(h);
+    for (const e of LOG.filter(x => x.d === day)) {
+      const el = document.createElement("article"); el.className = "entry";
+      el.innerHTML = `<time></time><div><h3></h3><ul></ul></div>`;
+      el.querySelector("time").textContent = e.t;
+      el.querySelector("time").setAttribute("datetime", `${e.d}T${e.t}`);
+      el.querySelector("h3").textContent = e.title;
+      if (e.tests) { const s = document.createElement("span"); s.className = "tests"; s.textContent = ` · ${e.tests} tests`; el.querySelector("h3").append(s) }
+      for (const i of e.items) { const li = document.createElement("li"); li.textContent = i; el.querySelector("ul").append(li) }
+      const fb = document.createElement("div"); fb.className = "fb";
+      fb.innerHTML = `<label>Feedback on this change</label><textarea data-fb="log:${e.d}-${e.t}" placeholder="Did it do what the entry says? Anything off?"></textarea>`;
+      el.append(fb);
+      sec.append(el);
+    }
+    root.append(sec);
+  }
+}
+
+function route() {
+  const h = location.hash;
+  const view = h === "#changelog" ? "changelog" : h === "#checklist" ? "checklist" : "plan";
+  for (const v of ["plan", "checklist", "changelog"]) {
+    $(`#${v}-view`).hidden = view !== v;
+    $(`#tab-${v}`).toggleAttribute("aria-current", view === v);
+    if (view === v) $(`#tab-${v}`).setAttribute("aria-current", "page");
+  }
+}
+
+// ---- Plan front page: the plan, and the open coding tasks mirrored from docs/PENDING.md (read-only; edit PENDING.md, then rebuild) ----
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e }
+let showDone = false;
+
+function renderPlan() {
+  const root = $("#plan");
+  root.innerHTML = "";
+  root.append(el("p", "plan-lead", "What is in front of us, in order. The test checklist is for trying the app; this page is for what gets built next."));
+  for (const ph of PLAN) {
+    const box = el("div", "phase"); box.dataset.status = ph.status;
+    const h = el("h3"); h.append(el("span", "tag", ph.phase), el("span", "", ph.title)); box.append(h);
+    const ul = el("ul"); for (const t of ph.items) ul.append(el("li", "", t));
+    box.append(ul); root.append(box);
+  }
+
+  if (typeof SPRINT !== "undefined" && SPRINT.length) {
+    const sh = el("h2", "", "Sprint queue");
+    sh.style.cssText = "font: 700 1.2rem var(--display); margin: 22px 0 0";
+    root.append(sh);
+    const done = SPRINT.filter(i => i.status === "done").length;
+    root.append(el("p", "sync", `${done} of ${SPRINT.length} done. Mirrored from docs/SPRINT.md, worked by the scheduled coordinator.`));
+    let phase = null, ol = null;
+    for (const it of SPRINT) {
+      if (it.phase !== phase) { phase = it.phase; const w = el("div", "pend"); w.append(el("h3", "", phase)); ol = el("ol"); w.append(ol); root.append(w) }
+      const li = el("li"); li.dataset.state = it.status === "done" ? "done" : "open";
+      li.append(el("span", "", it.id + " " + it.title + "  "), el("span", "tag", it.status));
+      if (it.status === "blocked" || it.status === "needs-fix") li.classList.add("blocked");
+      ol.append(li);
+    }
+  }
+
+  const open = PENDING.filter(i => i.state !== "done").length;
+  const head = el("h2", "", "Pending tasks");
+  head.style.cssText = "font: 700 1.2rem var(--display); margin: 22px 0 0";
+  root.append(head);
+  root.append(el("p", "sync", `${PENDING_COUNTS.open} open, ${PENDING_COUNTS.partial} partly done, ${PENDING_COUNTS.done} done. Mirrored from docs/PENDING.md.`));
+
+  const tools = el("div", "pend-tools");
+  const cb = el("input"); cb.type = "checkbox"; cb.id = "show-done"; cb.checked = showDone;
+  cb.addEventListener("change", () => { showDone = cb.checked; renderPlan(); });
+  const lab = el("label", "", "Show done items"); lab.htmlFor = "show-done";
+  tools.append(cb, lab);
+  root.append(tools);
+
+  const groups = new Map();
+  for (const it of PENDING) {
+    if (it.state === "done" && !showDone) continue;
+    if (!groups.has(it.section)) groups.set(it.section, []);
+    groups.get(it.section).push(it);
+  }
+  if (!groups.size) root.append(el("p", "", "Nothing open."));
+  for (const [sec, list] of groups) {
+    const wrap = el("div", "pend");
+    const h = el("h3", "", sec || "Other");
+    const n = list.filter(i => i.state !== "done").length;
+    h.append(el("span", "sec-count", `  ${n} open`));
+    wrap.append(h);
+    const ol = el("ol");
+    for (const it of list) {
+      const li = el("li", "", it.text); li.dataset.state = it.state;
+      if (/BLOCKED/.test(it.text)) li.classList.add("blocked");
+      ol.append(li);
+    }
+    wrap.append(ol);
+    root.append(wrap);
+  }
+  void open;
+}
+renderPlan();
+
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+  filter = c.dataset.f;
+  document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", x === c));
+  paint();
+}));
+window.addEventListener("hashchange", route);
+
+loadLocal(); renderRooms(); renderLog(); paint(); route();
+
+// Saved to the account when the page runs on claude.ai; otherwise (a local file) this browser keeps it.
+(async () => {
+  const use = window.claude && window.claude.use;
+  if (!use) return;
+  const d = await window.claude.use("db");
+  if (!d) return;
+  db = d;
+  $("#sync").textContent = "Saved to your account: the same on every device.";
+  db.collection("auto").onSnapshot(snap => {
+    for (const doc of snap.docs) { const v = doc.data() || {}; auto[doc.id] = { a: v.a || "", n: v.n || 0, e: v.e || 0, c: v.c || 0, t: v.t || "" } }
+    paint();
+  }, () => {});
+  db.collection("checks").onSnapshot(snap => {
+    for (const doc of snap.docs) { const v = doc.data() || {}; state[doc.id] = { s: v.s || "", n: v.n || "" } }
+    saveLocal(); paint();
+  }, () => { $("#sync").textContent = "Couldn't reach your saved results; changes stay in this browser for now." });
+})();
+</script>

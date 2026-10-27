@@ -1,0 +1,17 @@
+# systemd user service for the Moire Studio feedback collector.
+# Lingering must be on for this user so it starts at boot.
+[Unit]
+Description=Moire Studio feedback collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/MoireFeedback
+ExecStart=/usr/bin/python3 %h/MoireFeedback/server.py serve 8760
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

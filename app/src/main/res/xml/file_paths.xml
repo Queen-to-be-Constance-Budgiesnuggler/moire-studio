@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Project files other apps may read when an asset is sent to them (Bridge), and plugin files being shared. -->
+<paths>
+    <files-path name="projects" path="projects/" />
+    <cache-path name="shared" path="shared/" />
+</paths>

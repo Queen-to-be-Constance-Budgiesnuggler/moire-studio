@@ -1,0 +1,966 @@
+{
+ "generated": 1792986708.0838075,
+ "days": 30,
+ "tests": {
+  "lib-usein": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Library|Use in"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "lib-tags": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Library|+ tag"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "lib-compare": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Library|Compare"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "draw-image": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "tap:Draw|+ Image"
+   ],
+   "missing": [
+    "tap:Draw|Fill",
+    "tap:Draw|1:1",
+    "tap:Draw|Fit"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "draw-gen": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|+ Sine pair"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "draw-layers": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Down",
+    "tap:Draw|New",
+    "tap:Draw|Up"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "draw-save": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:Draw|Save"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792971606.0152543
+  },
+  "anim-libframes": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Animate|+ Library frames"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "anim-basics": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Animate|Edit in Draw",
+    "tap:Animate|Play"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "anim-recdrag": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Animate|Rec drag"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "anim-clear": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Animate|Clear all",
+    "tap:Animate|Undo"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "seq-frame": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Sequence|Turn 90\u00b0",
+    "tap:Sequence|Frame"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "seq-proj": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Sequence|Projector"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "seq-export": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Sequence|Export GIF"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "loop-free": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Loop|Free-run"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "patch-rec": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Patch|Record to Animate",
+    "tap:Patch|Undo in Draw"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "patch-graph": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Patch|Open as graph"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "dev-light": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "ctl:Develop.Exposure",
+    "ctl:Develop.Temperature",
+    "ctl:Develop.Black"
+   ],
+   "missing": [
+    "tap:Develop|Mixer"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "dev-style": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Develop|Style"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "fft-save": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:FFT|Save"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792971606.0152543
+  },
+  "gl-sweep": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Glitch|Sweep"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "gl-save": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:Glitch|Save"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792971606.0152543
+  },
+  "co-layers": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Compose|Draw canvas"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "co-tools": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Compose|Eraser",
+    "tap:Compose|Brush",
+    "tap:Compose|Crop"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "co-save": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:Compose|Save"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792971606.0152543
+  },
+  "nd-pickimg": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Pick image\u2026"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "nd-edit": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Select all",
+    "tap:Node Lab|Duplicate",
+    "tap:Node Lab|Collapse",
+    "tap:Node Lab|Rename"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "nd-run": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|\u25b6 Run"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "nw-align": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Swap A\u2194B",
+    "tap:Node Lab|Align"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "nw-blend": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Blend"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "lv-presets": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:Node Lab|\u25b6 Live"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792885929.9886978
+  },
+  "lv-seq": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Frame"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "fg-frame": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Rename",
+    "tap:Node Lab|Colour",
+    "tap:Node Lab|Frame"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "fg-group": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "fg-enter": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Rename group",
+    "tap:Node Lab|Enter group",
+    "tap:Node Lab|Group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "fg-field": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "fg-shared": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "fg-ungroup": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|Ungroup"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "fg-undo": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:Node Lab|Undo"
+   ],
+   "missing": [],
+   "errors": 9,
+   "crashes": 1,
+   "last": 1792972425.5929446
+  },
+  "st-file": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "tap:Studio|File"
+   ],
+   "missing": [
+    "tap:Studio|Rename",
+    "tap:Studio|Export"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "st-prefs": {
+   "state": "touched",
+   "installs": 2,
+   "have": [
+    "tap:Studio|Preferences"
+   ],
+   "missing": [],
+   "errors": 9,
+   "crashes": 2,
+   "last": 1792972425.5929446
+  },
+  "st-theme": {
+   "state": "touched",
+   "installs": 2,
+   "have": [
+    "tap:Studio|Theme"
+   ],
+   "missing": [],
+   "errors": 9,
+   "crashes": 2,
+   "last": 1792972425.5929446
+  },
+  "st-profile": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Studio|Profile"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "da-tools": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "tap:Develop|Clipping",
+    "tap:Develop|Region"
+   ],
+   "missing": [
+    "tap:Develop|RGB parade",
+    "tap:Develop|\u2715 Close"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "tp-send": {
+   "state": "touched",
+   "installs": 1,
+   "have": [
+    "tap:Node Lab|\u25b6 Live"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792885929.9886978
+  },
+  "tp-proj": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Node Lab|\u25b6 Full screen"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21cam-burn": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "room:Library"
+   ],
+   "missing": [
+    "tap:Camera|Grating",
+    "tap:Camera|Capture"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21cam-off": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Camera|Burn into capture",
+    "tap:Camera|Capture"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21cam-half": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "tap:Camera|Half resolution"
+   ],
+   "missing": [
+    "tap:Camera|Capture"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-group": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-sub": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-nest": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-hide": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Hide group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-showall": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Hide all",
+    "tap:Draw|Show all"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-rename": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Rename"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-dup": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:Draw|Duplicate"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792971606.0152543
+  },
+  "n21draw-paste": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Paste",
+    "tap:Draw|Copy"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-ungroup": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Ungroup"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-undo": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "tap:Draw|Duplicate"
+   ],
+   "missing": [
+    "tap:Draw|Group",
+    "tap:Draw|Hide group",
+    "tap:Draw|Undo"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21draw-export": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "tap:Draw|Save"
+   ],
+   "missing": [
+    "tap:Draw|Hide group"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21hist-draw": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|History"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21ab-draw": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Draw|Snap B"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21cfg-tab": {
+   "state": "seen",
+   "installs": 2,
+   "have": [
+    "tap:Studio|Config"
+   ],
+   "missing": [],
+   "errors": 9,
+   "crashes": 3,
+   "last": 1792972425.5929446
+  },
+  "n21cfg-project": {
+   "state": "touched",
+   "installs": 2,
+   "have": [
+    "tap:Studio|File"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 2,
+   "last": 1792971606.0152543
+  },
+  "n21cfg-export": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Studio|Export"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21cfg-math": {
+   "state": "touched",
+   "installs": 2,
+   "have": [
+    "tap:Studio|Config"
+   ],
+   "missing": [],
+   "errors": 9,
+   "crashes": 3,
+   "last": 1792972425.5929446
+  },
+  "n21dbg-off": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "tap:Studio|Config"
+   ],
+   "missing": [
+    "tap:Studio|Off",
+    "tap:Studio|Show the debug terminal over every room"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21dbg-clear": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Studio|Clear",
+    "tap:Studio|Close"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21ch-tab": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Develop|Mixer",
+    "tap:Develop|Channels"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21ch-reset": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:Develop|Reset"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792885929.9886978
+  },
+  "n21ui-view": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:UI Editor|Fit"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21ui-undo": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:UI Editor|Redo",
+    "tap:UI Editor|Undo"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21ui-flip": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "tap:UI Editor|\u27f2 Back"
+   ],
+   "missing": [],
+   "errors": 9,
+   "crashes": 1,
+   "last": 1792972425.5929446
+  },
+  "n21plg-list": {
+   "state": "seen",
+   "installs": 2,
+   "have": [
+    "tap:Studio|Plugins"
+   ],
+   "missing": [],
+   "errors": 9,
+   "crashes": 3,
+   "last": 1792972425.5929446
+  },
+  "n21plg-export": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Studio|Export"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21ab-dev": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Develop|Snap B"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21slit-v": {
+   "state": "touched",
+   "installs": 2,
+   "have": [
+    "room:Slit-scan"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 2,
+   "last": 1792971606.0152543
+  },
+  "n21slit-h": {
+   "state": "none",
+   "installs": 0,
+   "have": [],
+   "missing": [
+    "tap:Slit-scan|Horizontal"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21slit-w": {
+   "state": "seen",
+   "installs": 1,
+   "have": [
+    "ctl:SlitScan.Slit width"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792971606.0152543
+  },
+  "n21slit-time": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "ctl:SlitScan.Strength"
+   ],
+   "missing": [
+    "tap:Slit-scan|Ramp",
+    "tap:Slit-scan|Wave",
+    "tap:Slit-scan|Random",
+    "ctl:SlitScan.Seed"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21fft-update": {
+   "state": "partial",
+   "installs": 0,
+   "have": [
+    "ctl:Fft.Radius"
+   ],
+   "missing": [
+    "tap:FFT|LowPass"
+   ],
+   "errors": 0,
+   "crashes": 0,
+   "last": 0.0
+  },
+  "n21live-pick": {
+   "state": "touched",
+   "installs": 1,
+   "have": [
+    "tap:FFT|Image\u2026"
+   ],
+   "missing": [],
+   "errors": 0,
+   "crashes": 1,
+   "last": 1792971606.0152543
+  }
+ }
+}
